@@ -30,7 +30,16 @@ typedef struct map {
     char *ascii_map;
 } map;
 
+typedef struct dfs_results {
+    room *rooms[64];
+    int num_results;
+} dfs_results;
+
 room *get_room(map *game_map, const char *room_name);
+
+dfs_results *new_dfs_results();
+void reset_dfs_distances(map *game_map);
+dfs_results *find_rooms_by_distance(map *game_map, room *start_room, int distance, int inclusive);
 
 map *read_map(const char *fn);
 void print_map(const map *game_map);

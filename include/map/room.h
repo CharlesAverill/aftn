@@ -19,6 +19,8 @@ struct room { // This forward declaration allows for a room pointer in the struc
     int connection_count;
     room *connections[8];
     room *ladder_connection;
+
+    int dfs_distance;
 };
 
 room *create_room(char name[32], int is_corridor);

@@ -62,6 +62,57 @@ room *add_room_if_not_exists(char *room_name, map *new_map)
     return new_room;
 }
 
+dfs_results *new_dfs_results()
+{
+    dfs_results *out = (dfs_results *)malloc(sizeof(dfs_results));
+    out->num_results = 0;
+    return out;
+}
+
+void reset_dfs_distances(map *game_map)
+{
+    for (int i = 0; i < game_map->room_count; i++) {
+        game_map->rooms[i]->dfs_distance = -1;
+    }
+}
+
+// Modified DFS
+void _find_rooms_by_distance_recurse(room *start_room, int distance)
+{
+    start_room->dfs_distance = distance;
+
+    for (int i = 0; i < start_room->connection_count; i++) {
+        if (start_room->connections[i]->dfs_distance == -1) {
+            _find_rooms_by_distance_recurse(start_room->connections[i], distance + 1);
+        }
+    }
+
+    if (start_room->ladder_connection != NULL &&
+        start_room->ladder_connection->dfs_distance == -1) {
+        _find_rooms_by_distance_recurse(start_room->ladder_connection, distance + 1);
+    }
+}
+
+dfs_results *find_rooms_by_distance(map *game_map, room *start_room, int distance, int inclusive)
+{
+    dfs_results *results = new_dfs_results();
+
+    reset_dfs_distances(game_map);
+
+    _find_rooms_by_distance_recurse(start_room, 0);
+
+    for (int i = 0; i < game_map->room_count; i++) {
+        if (game_map->rooms[i]->dfs_distance == distance ||
+            (inclusive && game_map->rooms[i]->dfs_distance <= distance)) {
+            results->rooms[results->num_results++] = game_map->rooms[i];
+        }
+    }
+
+    reset_dfs_distances(game_map);
+
+    return results;
+}
+
 map *read_map(const char *fn)
 {
     // Allocate space for map
@@ -98,8 +149,9 @@ map *read_map(const char *fn)
             if (scanning_scrap_events_coolant == 0) {
                 scanning_scrap_events_coolant = 1;
                 continue;
-            } else if (scanning_scrap_events_coolant > 0) {
+            } else if (scanning_scrap_events_coolant > 0 && scanning_scrap_events_coolant < 4) {
                 scanning_scrap_events_coolant = 4;
+                continue;
             } else if (scanning_ascii_map == 0) {
                 scanning_ascii_map = 1;
                 new_map->ascii_map = (char *)malloc(2048);
@@ -107,6 +159,7 @@ map *read_map(const char *fn)
                 continue;
             } else if (scanning_ascii_map == 1) {
                 scanning_ascii_map = 2;
+                continue;
             }
         }
 

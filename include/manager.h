@@ -24,11 +24,22 @@ struct game_manager {
 
     int round_index;
     int turn_index;
+
+    int character_count;
     struct character *characters[5];
     struct character *active_character;
 };
 
 game_manager *new_game(const arguments args, map *game_map);
+
+int randint(int low, int high);
+
+room *character_move(game_manager *manager,
+                     struct character *to_move,
+                     dfs_results *allowed_moves,
+                     int allow_back);
+void reduce_morale(game_manager *manager, int lost);
+int trigger_event(game_manager *manager, struct character *moved);
 
 void game_loop(game_manager *manager);
 
