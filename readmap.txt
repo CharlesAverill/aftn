@@ -1,0 +1,126 @@
+Adding connection between MU-TH-UR and corridor_1
+Adding connection between BRIDGE and corridor_1
+Adding connection between BRIDGE and corridor_2
+Adding connection between GALLEY and corridor_2
+Adding connection between GALLEY and corridor_3
+Adding connection between GALLEY and corridor_4
+Adding connection between SUIT STORAGE and corridor_3
+Adding connection between SUIT STORAGE and corridor_5
+Adding connection between DOCKING BAY and corridor_4
+Adding connection between DOCKING BAY and corridor_8
+Adding connection between DOCKING BAY and corridor_9
+Adding connection between DOCKING BAY and corridor_11
+Adding connection between HYPERSLEEP and corridor_8
+Adding connection between AIRLOCK and corridor_11
+Adding connection between MEDBAY and corridor_10
+Adding connection between MAINTENANCE and corridor_12
+Adding connection between MAINTENANCE and corridor_14
+Adding connection between EQUIPMENT STORAGE and corridor_7
+Adding connection between GARAGE and corridor_6
+Adding connection between WORKSHOP and corridor_14
+Adding connection between NEST and corridor_13
+Adding connection between corridor_9 and corridor_10
+Adding connection between corridor_5 and corridor_10
+Adding connection between corridor_6 and corridor_12
+Adding connection between corridor_7 and corridor_12
+Adding connection between corridor_12 and corridor_13
+---NAME---
+Nostromo
+
+---ROOMS---
+	Name: MU-TH-UR
+	Type: Room
+	Scrap: 0
+	Has concealed token: False
+	Connections: corridor_1 
+
+	Name: BRIDGE
+	Type: Room
+	Scrap: 0
+	Has concealed token: False
+	Connections: corridor_1 corridor_2 
+
+	Name: GALLEY
+	Type: Room
+	Scrap: 0
+	Has concealed token: False
+	Connections: corridor_2 corridor_3 corridor_4 
+	<Player Start Room>
+
+	Name: SUIT STORAGE
+	Type: Room
+	Scrap: 0
+	Has concealed token: False
+	Connections: corridor_3 corridor_5 
+
+	Name: DOCKING BAY
+	Type: Room
+	Scrap: 0
+	Has concealed token: False
+	Connections: corridor_4 corridor_8 corridor_9 corridor_11 
+
+	Name: HYPERSLEEP
+	Type: Room
+	Scrap: 0
+	Has concealed token: False
+	Connections: corridor_8 
+
+	Name: AIRLOCK
+	Type: Room
+	Scrap: 0
+	Has concealed token: False
+	Connections: corridor_11 
+
+	Name: MEDBAY
+	Type: Room
+	Scrap: 0
+	Has concealed token: False
+	Connections: corridor_10 
+
+	Name: MAINTENANCE
+	Type: Room
+	Scrap: 0
+	Has concealed token: False
+	Connections: corridor_12 corridor_14 
+
+	Name: EQUIPMENT STORAGE
+	Type: Room
+	Scrap: 0
+	Has concealed token: False
+	Connections: corridor_7 
+
+	Name: GARAGE
+	Type: Room
+	Scrap: 0
+	Has concealed token: False
+	Connections: corridor_6 
+
+	Name: WORKSHOP
+	Type: Room
+	Scrap: 0
+	Has concealed token: False
+	Connections: corridor_14 
+
+	Name: NEST
+	Type: Room
+	Scrap: 0
+	Has concealed token: False
+	Connections: corridor_13 
+	<Alien Start Room>
+
+---CORRIDORS---
+corridor_1
+corridor_2
+corridor_3
+corridor_4
+corridor_5
+corridor_8
+corridor_9
+corridor_11
+corridor_10
+corridor_12
+corridor_14
+corridor_7
+corridor_6
+corridor_13
+

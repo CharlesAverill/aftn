@@ -1,0 +1,54 @@
+The first line of a map file is the map name, up to 31 characters.
+
+Each following line starts either with the name of a named room, or the integer ID of a corridor.
+Following the name or ID, semicolon-separated room names and corridor IDs denote connected rooms
+and corridors. A room can have at most 8 connections and one ladder connection. To denote a ladder
+connection, start the connection with a "%". Only one ladder definition is required.
+
+Each line of the input file may be up to 255 characters long.
+
+A given map may have a total of 64 rooms and corridors.
+
+The xenomorph's starting location is denoted by prepending "&" to the room name;
+
+The player's starting location is denoted by prepending "*" to the room name;
+
+Ash's starting location is denoted by prepending "$" to the room name.
+
+Each of the special locations listed above MUST be named rooms.
+
+After the room and corridor listings, three tildes denote the start of Scrap, Event, and Coolant
+rooms. The first line contains a semicolon-delimited list of rooms that start out with Scrap,
+the second with Events, the third with Coolant. There can be at most 8 of each of these rooms.
+
+After the scrap, event, and coolant listings, three tildes denote the start of a visual ASCII map. Another
+three tildes denote the end. The ASCII map may be up to 2kb in size. The ASCII map is optional.
+
+An example map file is given:
+
+Fun Map Name
+*a;1;2;
+&b;1;3;4;
+c;2;3;%d;
+d;
+4;3;
+~~~
+a;b;c;
+b
+c;d
+~~~
+┌────┐           ┌────┐
+│ a  │           │ b  │
+│    ├───────────┤    ├─────┐
+└─┬──┘           └──┬─┘     │
+  │                 │       │
+  │     ┌────┐      │       │
+  │     │ c  │      │       │
+  └─────┤    ├──────┴───────┘
+        └────┘
+
+        ┌────┐
+        │ d  │ (ladder between c and d)
+        |    |
+        └────┘
+~~~
