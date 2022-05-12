@@ -40,6 +40,7 @@ room *character_move(game_manager *manager,
                      int allow_back);
 void reduce_morale(game_manager *manager, int lost);
 int trigger_event(game_manager *manager, struct character *moved);
+int trigger_encounter(game_manager *manager);
 
 void game_loop(game_manager *manager);
 

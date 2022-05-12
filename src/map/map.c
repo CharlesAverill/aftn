@@ -144,6 +144,10 @@ map *read_map(const char *fn)
     new_map->event_room_count = 0;
     new_map->coolant_room_count = 0;
 
+    new_map->room_count = 0;
+
+    new_map->ascii_map = "";
+
     while (fgets(line, 255, fp)) {
         if (line[0] == '~') {
             if (scanning_scrap_events_coolant == 0) {

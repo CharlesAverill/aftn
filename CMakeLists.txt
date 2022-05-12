@@ -7,7 +7,7 @@ set(CMAKE_BUILD_TYPE Debug)
 
 # Copy maps to /var/games/aftn
 file(MAKE_DIRECTORY /var/games/aftn)
-file(COPY ${CMAKE_SOURCE_DIR}/maps DESTINATION /var/games/aftn)
+file(COPY ${CMAKE_SOURCE_DIR}/game_data DESTINATION /var/games/aftn)
 
 # Includes
 include_directories(${CMAKE_SOURCE_DIR}/include)

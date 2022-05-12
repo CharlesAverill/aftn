@@ -18,10 +18,14 @@ room *create_room(char name[32], int is_corridor)
     strcpy(new_room->name, name);
     new_room->is_corridor = is_corridor;
 
+    new_room->num_scrap = 0;
+    new_room->has_event = 0;
+
     new_room->connection_count = 0;
     for (int i = 0; i < 8; i++) {
         new_room->connections[i] = NULL;
     }
+    new_room->ladder_connection = NULL;
 
     new_room->dfs_distance = -1;
 

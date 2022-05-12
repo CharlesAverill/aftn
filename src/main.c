@@ -13,7 +13,8 @@
 #include "manager.h"
 #include "map/map.h"
 
-const char *DEFAULT_MAP = "/var/games/aftn/maps/default";
+const char *DEFAULT_MAP = "/var/games/aftn/game_data/maps/default";
+const char *BANNER = "/var/games/aftn/game_data/banner.txt";
 
 const char *argp_program_version = "aftn 0.0.1";
 const char *argp_program_bug_address = "charles@utdallas.edu";
@@ -53,6 +54,21 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    // Print banner
+    FILE *fp;
+    fp = fopen(BANNER, "r");
+    if (fp == NULL) {
+        fprintf(stderr, "[ERROR] - Could not open banner file %s\n", BANNER);
+        exit(1);
+    }
+
+    char line[128];
+    while (fgets(line, 127, fp)) {
+        printf("%s", line);
+    }
+
+    fclose(fp);
+
     map *game_map = read_map(arguments.game_file);
 
     if (arguments.print_map) {
@@ -65,8 +81,10 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
+    // Create new game
     game_manager *manager = new_game(arguments, game_map);
 
+    // Start game loop
     game_loop(manager);
 
     return 0;

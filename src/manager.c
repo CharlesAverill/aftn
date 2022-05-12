@@ -25,7 +25,11 @@ game_manager *new_game(const arguments args, map *game_map)
 
     // Initialize Xenomorph and Ash locations
     manager->xenomorph_location = manager->game_map->xenomorph_start_room;
-    manager->ash_location = manager->game_map->ash_start_room;
+    if (args.use_ash) {
+        manager->ash_location = manager->game_map->ash_start_room;
+    } else {
+        manager->ash_location = NULL;
+    }
 
     // Place initial scrap
     for (int i = 0; i < manager->game_map->scrap_room_count; i++) {
@@ -72,10 +76,14 @@ game_manager *new_game(const arguments args, map *game_map)
                    characters[j].max_actions,
                    characters[j].ability_description);
         }
+        printf("e) Exit\n");
 
         char ch = 0;
         while (ch < '0' || ch > '5') {
-            ch = getc(stdin);
+            ch = getchar();
+            if (ch == 'e') {
+                exit(0);
+            }
         }
 
         int selection = ch - '0' - 1;
@@ -163,9 +171,8 @@ void reduce_morale(game_manager *manager, int lost)
 
 int trigger_event(game_manager *manager, struct character *moved)
 {
-    if (1 || moved->current_room->has_event) {
+    if (moved->current_room->has_event) {
         int event_type = randint(1, 12);
-        event_type = 12;
 
         if (event_type <= 8) {
             printf("[EVENT] - Safe\n");
@@ -185,6 +192,8 @@ int trigger_event(game_manager *manager, struct character *moved)
                 "You encounter the Xenomorph! Morale decreases by %d and you must flee 3 spaces.\n",
                 lost_morale);
 
+            manager->xenomorph_location = moved->current_room;
+
             reduce_morale(manager, lost_morale);
 
             dfs_results *allowed_moves =
@@ -196,6 +205,10 @@ int trigger_event(game_manager *manager, struct character *moved)
     }
 
     return 0;
+}
+
+int trigger_encounter(game_manager *manager)
+{
 }
 
 void game_loop(game_manager *manager)
@@ -212,11 +225,12 @@ void game_loop(game_manager *manager)
 
             manager->active_character = manager->characters[manager->turn_index];
             printf("-----Turn %d: %s------\n",
-                   manager->turn_index,
+                   manager->turn_index + 1,
                    manager->active_character->last_name);
 
             printf("h - view help menu\n");
 
+            int do_encounter = 1;
             for (int j = manager->active_character->max_actions; j > 0; j--) {
                 manager->active_character->current_actions = j;
 
@@ -234,12 +248,22 @@ void game_loop(game_manager *manager)
                     int recognized = 0;
                     switch (ch) {
                     case 'h':
-                        printf("m - move\np - pick up\nd - drop\na - ability\nc - craft\ni - use "
-                               "item\nt - trade\nq - draw map\nr - print text map\ne - exit\n");
+                        printf("m - move\n"
+                               "p - pick up\n"
+                               "d - drop\n"
+                               "a - ability\n"
+                               "c - craft\n"
+                               "i - use item\n"
+                               "t - trade\n"
+                               "v - view current room\n"
+                               "l - character locations\n"
+                               "q - draw map\n"
+                               "r - print text map\n"
+                               "e - exit\n");
+
                         recognized = 1;
                         break;
-                    case 'm':
-                        printf("Move\n");
+                    case 'm':; // Start case with assignment
                         room *last_room = manager->active_character->current_room;
                         manager->active_character->current_room =
                             character_move(manager, manager->active_character, NULL, 1);
@@ -250,47 +274,79 @@ void game_loop(game_manager *manager)
                                    manager->active_character->last_name,
                                    last_room->name,
                                    manager->active_character->current_room->name);
-                            trigger_event(manager, manager->active_character);
+                            if (trigger_event(manager, manager->active_character) ==
+                                2) { // Alien encounter
+                                // Immediately end turn and don't do an encounter
+                                j = 0;
+                                do_encounter = 0;
+                            }
                             break_loop = 1;
                         }
+
                         recognized = 1;
                         break;
                     case 'p':
                         printf("Pick up\n");
+
                         break_loop = 1;
                         recognized = 1;
                         break;
                     case 'd':
                         printf("Drop\n");
+
                         break_loop = 1;
                         recognized = 1;
                         break;
                     case 'a':
                         printf("Use ability\n");
+
                         break_loop = 1;
                         recognized = 1;
                         break;
                     case 'c':
                         printf("Craft\n");
+
                         break_loop = 1;
                         recognized = 1;
                         break;
                     case 'i':
                         printf("Use item\n");
+
                         break_loop = 1;
                         recognized = 1;
                         break;
                     case 't':
                         printf("Trade\n");
+
                         break_loop = 1;
+                        recognized = 1;
+                        break;
+                    case 'v':
+                        print_room(manager->active_character->current_room, 1);
+
+                        recognized = 1;
+                        break;
+                    case 'l':
+                        for (int i = 0; i < manager->character_count; i++) {
+                            printf("%s at %s\n",
+                                   manager->characters[i]->last_name,
+                                   manager->characters[i]->current_room);
+                        }
+                        printf("Xenomorph at %s\n", manager->xenomorph_location->name);
+                        if (manager->ash_location != NULL) {
+                            printf("Ash at %s\n", manager->ash_location->name);
+                        }
+
                         recognized = 1;
                         break;
                     case 'q':
                         printf("%s\n", manager->game_map->ascii_map);
+
                         recognized = 1;
                         break;
                     case 'r':
                         print_map(manager->game_map);
+
                         recognized = 1;
                         break;
                     case 'e':
@@ -310,6 +366,10 @@ void game_loop(game_manager *manager)
                         printf("Unrecognized command\n");
                     }
                 }
+            }
+
+            if (do_encounter) {
+                trigger_encounter(manager);
             }
         }
 
