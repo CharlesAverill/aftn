@@ -280,7 +280,7 @@ void xeno_move(game_manager *manager, int num_spaces, int morale_drop)
         if (manager->characters[i]->current_room == manager->xenomorph_location) {
             if (!printed_message) {
                 printed_message = 1;
-                printf("The Xenomorph meets you in %s!\n", manager->xenomorph_location);
+                printf("The Xenomorph meets you in %s!\n", manager->xenomorph_location->name);
             }
 
             flee(manager, manager->characters[i]);
@@ -535,9 +535,75 @@ void game_loop(game_manager *manager)
                         recognized = 1;
                         break;
                     case 'p':
-                        printf("Pick up\n");
+                        if (manager->active_character->current_room->num_scrap == 0 &&
+                            manager->active_character->current_room->num_items == 0) {
+                            printf("There are no items or Scrap to pick up.\n");
+                        } else {
+                            // Print out options
+                            printf("Options:\n");
+                            int option_index = 0;
 
-                        break_loop = 1;
+                            // Print scrap
+                            int scrap_index = -1;
+                            if (manager->active_character->current_room->num_scrap != 0) {
+                                scrap_index = option_index;
+                                printf("\t%d) Scrap (%d)\n",
+                                       ++option_index,
+                                       manager->active_character->current_room->num_scrap);
+                            }
+
+                            // Print room items
+                            int item_indices[4] = {-1, -1, -1, -1};
+                            for (int k = 0; k < manager->active_character->current_room->num_items;
+                                 k++) {
+                                item_indices[k] = option_index;
+                                printf("\t%d) ", ++option_index);
+                                print_item(manager->active_character->current_room->room_items[k]);
+                            }
+
+                            // Back
+                            printf("\tb) Back\n");
+
+                            // Read input
+                            char ch = '\0';
+                            while (ch < '0' || ch > '0' + option_index) {
+                                getchar();
+                                ch = getchar();
+
+                                if (ch == 'b') {
+                                    break;
+                                }
+                            }
+
+                            // Process input
+                            if (ch == 'b') {
+                                break;
+                            } else {
+                                int selection_index = ch - '0' - 1;
+
+                                if (scrap_index == selection_index) {
+                                    printf("Pick up how much scrap? (Max %d): ",
+                                           manager->active_character->current_room->num_scrap);
+
+                                    ch = '\0';
+                                    while (ch < '1' || ch > '0' + manager->active_character
+                                                                      ->current_room->num_scrap) {
+                                        getchar();
+                                        ch = getchar();
+                                    }
+
+                                    printf("%s picked up %d Scrap\n",
+                                           manager->active_character->last_name,
+                                           ch - '0');
+                                    manager->active_character->current_room->num_scrap -= ch - '0';
+                                    manager->active_character->n_scrap += ch - '0';
+                                } else {
+                                }
+
+                                break_loop = 1;
+                            }
+                        }
+
                         recognized = 1;
                         break;
                     case 'd':

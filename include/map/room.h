@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "item.h"
+
 typedef struct room room;
 struct room { // This forward declaration allows for a room pointer in the struct definition
     char name[32];
@@ -20,6 +22,9 @@ struct room { // This forward declaration allows for a room pointer in the struc
 
     int num_scrap;
     bool has_event;
+
+    int num_items;
+    item *room_items[4];
 
     int connection_count;
     room *connections[8];

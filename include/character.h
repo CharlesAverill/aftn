@@ -8,6 +8,7 @@
 #ifndef CHARACTER_H
 #define CHARACTER_H
 
+#include "item.h"
 #include "manager.h"
 #include "map/map.h"
 #include "map/room.h"
@@ -22,8 +23,8 @@ struct character {
     int current_actions;
 
     int n_scrap;
-    char held_items[3];
-    char *coolant;
+    item *held_items[3];
+    item *coolant;
 
     room *current_room;
 

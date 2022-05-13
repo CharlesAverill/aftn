@@ -17,6 +17,8 @@ room *create_room(char name[32], bool is_corridor)
     new_room->num_scrap = 0;
     new_room->has_event = false;
 
+    new_room->num_items = 0;
+
     new_room->connection_count = 0;
     for (int i = 0; i < 8; i++) {
         new_room->connections[i] = NULL;
