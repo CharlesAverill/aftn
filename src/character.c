@@ -14,16 +14,18 @@ character characters[5] = {
      4,
      0,
      0,
+     0,
      {0, 0, 0},
      0,
      0,
      "Spend an action: Move another crewmember 1 SPACE",
      ripley_ability},
-    {"Dallas", "Arthur", "Captain", 5, 0, 0, {0, 0, 0}, 0, 0, "None", dallas_ability},
+    {"Dallas", "Arthur", "Captain", 5, 0, 0, 0, {0, 0, 0}, 0, 0, "None", dallas_ability},
     {"Parker",
      "Dennis",
      "Chief Engineer",
      4,
+     0,
      0,
      0,
      {0, 0, 0},
@@ -37,6 +39,7 @@ character characters[5] = {
      3,
      0,
      0,
+     0,
      {0, 0, 0},
      0,
      0,
@@ -47,6 +50,7 @@ character characters[5] = {
      "Joan",
      "Navigator",
      4,
+     0,
      0,
      0,
      {0, 0, 0},
@@ -71,7 +75,7 @@ void dallas_ability(map *game_map, character characters[5], character *active_ch
 
 void parker_ability(map *game_map, character characters[5], character *active_character)
 {
-    active_character->n_scrap++;
+    active_character->num_scrap++;
     active_character->current_actions--;
 }
 

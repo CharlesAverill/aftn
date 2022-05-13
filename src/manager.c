@@ -420,13 +420,14 @@ void trigger_encounter(game_manager *manager)
                manager->active_character->last_name);
         replace_order937_cards();
         ash_move(manager, 2);
+        manager->active_character->num_scrap = 0;
 
         break;
     case ORDER937_Collating_Data:
         printf("[ENCOUNTER] - Collating data - Ash moves twice, and each character loses 1 "
                "Scrap\n");
         for (int i = 0; i < manager->character_count; i++) {
-            manager->characters[i]->n_scrap = max(0, manager->characters[i]->n_scrap - 1);
+            manager->characters[i]->num_scrap = max(0, manager->characters[i]->num_scrap - 1);
         }
         ash_move(manager, 2);
 
@@ -596,7 +597,7 @@ void game_loop(game_manager *manager)
                                            manager->active_character->last_name,
                                            ch - '0');
                                     manager->active_character->current_room->num_scrap -= ch - '0';
-                                    manager->active_character->n_scrap += ch - '0';
+                                    manager->active_character->num_scrap += ch - '0';
                                 } else {
                                 }
 
@@ -607,7 +608,74 @@ void game_loop(game_manager *manager)
                         recognized = 1;
                         break;
                     case 'd':
-                        printf("Drop\n");
+                        if (manager->active_character->num_scrap == 0 &&
+                            manager->active_character->num_items == 0) {
+                            printf("%s has no items or Scrap to drop.\n",
+                                   manager->active_character->last_name);
+                        } else {
+                            // Print out options
+                            printf("Options:\n");
+                            int option_index = 0;
+
+                            // Print scrap
+                            int scrap_index = -1;
+                            if (manager->active_character->num_scrap != 0) {
+                                scrap_index = option_index;
+                                printf("\t%d) Scrap (%d)\n",
+                                       ++option_index,
+                                       manager->active_character->num_scrap);
+                            }
+
+                            // Print character items
+                            int item_indices[3] = {-1, -1, -1};
+                            for (int k = 0; k < manager->active_character->num_items; k++) {
+                                item_indices[k] = option_index;
+                                printf("\t%d) ", ++option_index);
+                                print_item(manager->active_character->held_items[k]);
+                            }
+
+                            // Back
+                            printf("\tb) Back\n");
+
+                            // Read input
+                            char ch = '\0';
+                            while (ch < '0' || ch > '0' + option_index) {
+                                getchar();
+                                ch = getchar();
+
+                                if (ch == 'b') {
+                                    break;
+                                }
+                            }
+
+                            // Process input
+                            if (ch == 'b') {
+                                break;
+                            } else {
+                                int selection_index = ch - '0' - 1;
+
+                                if (scrap_index == selection_index) {
+                                    printf("Drop how much scrap? (Max %d): ",
+                                           manager->active_character->num_scrap);
+
+                                    ch = '\0';
+                                    while (ch < '1' ||
+                                           ch > '0' + manager->active_character->num_scrap) {
+                                        getchar();
+                                        ch = getchar();
+                                    }
+
+                                    printf("%s dropped %d Scrap\n",
+                                           manager->active_character->last_name,
+                                           ch - '0');
+                                    manager->active_character->current_room->num_scrap += ch - '0';
+                                    manager->active_character->num_scrap -= ch - '0';
+                                } else {
+                                }
+
+                                break_loop = 1;
+                            }
+                        }
 
                         break_loop = 1;
                         recognized = 1;

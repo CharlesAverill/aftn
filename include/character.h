@@ -22,7 +22,8 @@ struct character {
     int max_actions;
     int current_actions;
 
-    int n_scrap;
+    int num_scrap;
+    int num_items;
     item *held_items[3];
     item *coolant;
 
