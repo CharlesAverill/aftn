@@ -125,6 +125,19 @@ ability_output *dallas_ability(map *game_map, character *characters[5], characte
 ability_output *parker_ability(map *game_map, character *characters[5], character *active_character)
 {
     ability_output *out = new_ability_output();
+
+    printf("Confirm use of this ability? (y/n) ");
+
+    char ch;
+    while (ch != 'y' && ch != 'n') {
+        ch = get_character();
+    }
+
+    if (ch == 'n') {
+        out->use_action = false;
+        return out;
+    }
+
     out->can_use_ability_again = false;
 
     active_character->num_scrap++;
