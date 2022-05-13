@@ -16,6 +16,9 @@ typedef struct map {
     int room_count;
     room *rooms[64];
 
+    int named_room_count;
+    int named_room_indices[64];
+
     room *player_start_room;
     room *xenomorph_start_room;
     room *ash_start_room;
@@ -38,7 +41,7 @@ typedef struct dfs_results {
 room *get_room(map *game_map, const char *room_name);
 
 dfs_results *new_dfs_results();
-void reset_dfs_distances(map *game_map);
+void reset_search(map *game_map, int distance);
 dfs_results *find_rooms_by_distance(map *game_map, room *start_room, int distance, int inclusive);
 
 map *read_map(const char *fn);

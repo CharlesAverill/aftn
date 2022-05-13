@@ -7,10 +7,12 @@
 
 #include "manager.h"
 
+#include <limits.h>
 #include <stdlib.h>
 #include <time.h>
 
 #include "character.h"
+#include "encounter.h"
 #include "map/map.h"
 
 game_manager *new_game(const arguments args, map *game_map)
@@ -97,6 +99,9 @@ game_manager *new_game(const arguments args, map *game_map)
     // Set random seed
     srand(time(0));
 
+    // Shuffle encounter deck
+    shuffle_encounters();
+
     return manager;
 }
 
@@ -155,6 +160,121 @@ room *character_move(game_manager *manager,
     return NULL;
 }
 
+struct room_queue *shortest_path(map *game_map, room *source, room *target)
+{
+    // Set all to unvisited and distance to inf
+    reset_search(game_map, INT_MAX);
+    // Set start vertex (xeno room) distance to 0
+    source->search_distance = 0;
+
+    // Create queue of rooms
+    struct room_queue *rq = newQueue(64);
+    for (int i = 0; i < game_map->room_count; i++) {
+        push(rq, game_map->rooms[i]);
+    }
+
+    while (rq->head != NULL) {
+        // Get closest node
+        int min_node_distance = INT_MAX;
+        room *min_node = rq->head;
+        room *tmp = rq->head;
+        while (tmp != NULL) {
+            if (tmp->search_distance < min_node_distance) {
+                min_node_distance = tmp->search_distance;
+                min_node = tmp;
+            }
+            tmp = tmp->room_queue_next;
+        }
+
+        if (min_node == target) {
+            struct room_queue *shortest_path = newQueue(64);
+            if (min_node->search_previous_room != NULL || min_node == source) {
+                while (min_node != NULL) {
+                    push(shortest_path, min_node);
+                    min_node = min_node->search_previous_room;
+                }
+
+                return shortest_path;
+            }
+        }
+
+        // Remove closest node from rq
+        if (min_node == rq->head) {
+            rq->head = rq->head->room_queue_next;
+        } else {
+            room *traverse = rq->head;
+            while (traverse->room_queue_next != min_node) {
+                traverse = traverse->room_queue_next;
+            }
+            traverse->room_queue_next = min_node->room_queue_next;
+        }
+
+        // For each connection of min_node in rq
+        if (min_node != NULL) {
+            for (int i = 0; i < min_node->connection_count; i++) {
+                room *neighbor = min_node->connections[i];
+                if (queue_contains(rq, neighbor)) {
+                    int alt = min_node->search_distance + 1;
+                    if (alt < neighbor->search_distance) {
+                        neighbor->search_distance = alt;
+                        neighbor->search_previous_room = min_node;
+                    }
+                }
+            }
+
+            if (queue_contains(rq, min_node->ladder_connection)) {
+                int alt = min_node->search_distance + 1;
+                if (alt < min_node->ladder_connection->search_distance) {
+                    min_node->ladder_connection->search_distance = alt;
+                    min_node->ladder_connection->search_previous_room = min_node;
+                }
+            }
+        }
+    }
+
+    return NULL;
+}
+
+// Modified Djikstra
+room *xeno_move(game_manager *manager, int num_spaces, int morale_drop)
+{
+    struct room_queue *shortest = NULL;
+    int s = INT_MAX;
+    for (int i = 0; i < manager->character_count; i++) {
+        struct room_queue *rq = shortest_path(
+            manager->game_map, manager->xenomorph_location, manager->characters[i]->current_room);
+
+        if (rq != NULL && rq->size < s) {
+            shortest = rq;
+            s = rq->size;
+        }
+    }
+
+    if (s < num_spaces) {
+        manager->xenomorph_location = shortest->tail;
+    } else {
+        for (int i = 0; i < num_spaces && shortest->head->room_queue_next != NULL; i++) {
+            pop_tail(shortest);
+        }
+        manager->xenomorph_location = shortest->tail;
+    }
+
+    int printed_message = 0;
+    for (int i = 0; i < manager->character_count; i++) {
+        if (manager->characters[i]->current_room == manager->xenomorph_location) {
+            if (!printed_message) {
+                printed_message = 1;
+                printf("The Xenomorph meets you in %s!\n", manager->xenomorph_location);
+            }
+            flee(manager, manager->characters[i]);
+        }
+    }
+}
+
+room *ash_move(game_manager *manager, int num_spaces)
+{
+}
+
 void reduce_morale(game_manager *manager, int lost)
 {
     for (int i = 0; i < manager->character_count; i++) {
@@ -196,9 +316,7 @@ int trigger_event(game_manager *manager, struct character *moved)
 
             reduce_morale(manager, lost_morale);
 
-            dfs_results *allowed_moves =
-                find_rooms_by_distance(manager->game_map, moved->current_room, 3, 0);
-            moved->current_room = character_move(manager, moved, allowed_moves, 0);
+            flee(manager, moved);
 
             return 2;
         }
@@ -209,6 +327,82 @@ int trigger_event(game_manager *manager, struct character *moved)
 
 int trigger_encounter(game_manager *manager)
 {
+    int discard_index = draw_encounter();
+    ENCOUNTER_TYPES encounter = discard_encounters[discard_index];
+
+    switch (encounter) {
+    case QUIET:;
+        room *target_room = manager->game_map->rooms[manager->game_map->named_room_indices[randint(
+            0, manager->game_map->named_room_count - 1)]];
+        printf("[ENCOUNTER] - All is quiet in %s. Alien moves 1 space.\n", target_room->name);
+
+        int scrap_decider = randint(1, 11);
+        if (scrap_decider <= 8) {
+            target_room->num_scrap += 2;
+        } else if (scrap_decider <= 10) {
+            target_room->num_scrap += 3;
+        } else {
+            target_room->num_scrap += 1;
+        }
+
+        target_room->has_event = 1;
+
+        xeno_move(manager, 1, 2);
+
+        break;
+    case ALIEN_Lost_The_Signal:
+        printf("[ENCOUNTER] - We lost the signal. Xenomorph has returned to %s\n",
+               manager->game_map->xenomorph_start_room->name);
+
+        manager->xenomorph_location = manager->game_map->xenomorph_start_room;
+        //xeno_move(manager, 0, 2);
+        replace_alien_cards();
+
+        break;
+    case ALIEN_Stalk:
+        printf("[ENCOUNTER] - The Xenomorph is stalking...\n");
+        xeno_move(manager, 3, 3);
+
+        break;
+    case ALIEN_Hunt:
+        printf("[ENCOUNTER] - The Xenomorph is hunting!\n");
+        xeno_move(manager, 2, 4);
+
+        break;
+    case ORDER937_Meet_Me_In_The_Infirmary:
+        printf("[ENCOUNTER] - Ash moves twice, and %s moves to %s\n",
+               manager->active_character->last_name,
+               manager->game_map->ash_start_room->name);
+        manager->active_character->current_room = manager->game_map->ash_start_room;
+        ash_move(manager, 2);
+
+        break;
+    case ORDER937_Crew_Expendable:
+        printf("[ENCOUNTER] - Crew Expendable - Ash moves twice, and %s loses all Scrap\n",
+               manager->active_character->last_name);
+        replace_order937_cards();
+        ash_move(manager, 2);
+
+        break;
+    case ORDER937_Collating_Data:
+        printf("[ENCOUNTER] - Collating data - Ash moves twice, and each character loses 1 "
+               "Scrap\n");
+        for (int i = 0; i < manager->character_count; i++) {
+            manager->characters[i]->n_scrap = max(0, manager->characters[i]->n_scrap - 1);
+        }
+        ash_move(manager, 2);
+
+        break;
+    }
+}
+
+void flee(game_manager *manager, struct character *moved)
+{
+    printf("%s must flee 3 spaces:\n", moved->last_name);
+
+    dfs_results *allowed_moves =
+        find_rooms_by_distance(manager->game_map, moved->current_room, 3, 0);
+    moved->current_room = character_move(manager, moved, allowed_moves, 0);
 }
 
 void game_loop(game_manager *manager)
@@ -330,7 +524,7 @@ void game_loop(game_manager *manager)
                         for (int i = 0; i < manager->character_count; i++) {
                             printf("%s at %s\n",
                                    manager->characters[i]->last_name,
-                                   manager->characters[i]->current_room);
+                                   manager->characters[i]->current_room->name);
                         }
                         printf("Xenomorph at %s\n", manager->xenomorph_location->name);
                         if (manager->ash_location != NULL) {

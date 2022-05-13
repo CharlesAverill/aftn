@@ -27,7 +27,11 @@ room *create_room(char name[32], int is_corridor)
     }
     new_room->ladder_connection = NULL;
 
-    new_room->dfs_distance = -1;
+    new_room->search_distance = -1;
+    new_room->search_discovered = 0;
+    new_room->search_previous_room = NULL;
+
+    new_room->room_queue_next = NULL;
 
     return new_room;
 }

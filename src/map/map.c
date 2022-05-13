@@ -69,26 +69,28 @@ dfs_results *new_dfs_results()
     return out;
 }
 
-void reset_dfs_distances(map *game_map)
+void reset_search(map *game_map, int distance)
 {
     for (int i = 0; i < game_map->room_count; i++) {
-        game_map->rooms[i]->dfs_distance = -1;
+        game_map->rooms[i]->search_distance = distance;
+        game_map->rooms[i]->search_discovered = 0;
+        game_map->rooms[i]->search_previous_room = NULL;
     }
 }
 
 // Modified DFS
 void _find_rooms_by_distance_recurse(room *start_room, int distance)
 {
-    start_room->dfs_distance = distance;
+    start_room->search_distance = distance;
 
     for (int i = 0; i < start_room->connection_count; i++) {
-        if (start_room->connections[i]->dfs_distance == -1) {
+        if (start_room->connections[i]->search_distance == -1) {
             _find_rooms_by_distance_recurse(start_room->connections[i], distance + 1);
         }
     }
 
     if (start_room->ladder_connection != NULL &&
-        start_room->ladder_connection->dfs_distance == -1) {
+        start_room->ladder_connection->search_distance == -1) {
         _find_rooms_by_distance_recurse(start_room->ladder_connection, distance + 1);
     }
 }
@@ -97,18 +99,18 @@ dfs_results *find_rooms_by_distance(map *game_map, room *start_room, int distanc
 {
     dfs_results *results = new_dfs_results();
 
-    reset_dfs_distances(game_map);
+    reset_search(game_map, -1);
 
     _find_rooms_by_distance_recurse(start_room, 0);
 
     for (int i = 0; i < game_map->room_count; i++) {
-        if (game_map->rooms[i]->dfs_distance == distance ||
-            (inclusive && game_map->rooms[i]->dfs_distance <= distance)) {
+        if (game_map->rooms[i]->search_distance == distance ||
+            (inclusive && game_map->rooms[i]->search_distance <= distance)) {
             results->rooms[results->num_results++] = game_map->rooms[i];
         }
     }
 
-    reset_dfs_distances(game_map);
+    reset_search(game_map, -1);
 
     return results;
 }
@@ -145,10 +147,12 @@ map *read_map(const char *fn)
     new_map->coolant_room_count = 0;
 
     new_map->room_count = 0;
+    new_map->named_room_count = 0;
 
     new_map->ascii_map = "";
 
     while (fgets(line, 255, fp)) {
+        // Section checking
         if (line[0] == '~') {
             if (scanning_scrap_events_coolant == 0) {
                 scanning_scrap_events_coolant = 1;
@@ -167,6 +171,7 @@ map *read_map(const char *fn)
             }
         }
 
+        // Scrap, Events, Coolant scanning
         if (scanning_scrap_events_coolant > 0 && scanning_scrap_events_coolant < 4) {
             char *columns = strtok(line, ";");
             while (columns) {
@@ -216,17 +221,24 @@ map *read_map(const char *fn)
             strip_string(columns, strlen(columns));
 
             if (column_index == 0) {
+                // Named room
                 if (is_letter(columns[0]) || columns[0] == '&' || columns[0] == '*' ||
-                    columns[0] == '$') { // Named room
+                    columns[0] == '$') {
                     target_room = add_room_if_not_exists(columns, new_map);
-                } else if (is_number(columns[0])) { // Chained corridors
+                    new_map->named_room_indices[new_map->named_room_count++] =
+                        new_map->room_count - 1;
+                }
+                // Chained corridors
+                else if (is_number(columns[0])) {
                     char corridor_name[32] = "corridor_";
                     strcat(corridor_name, columns);
 
                     target_room = get_room(new_map, corridor_name);
                 }
-            } else {                         // Connections
-                if (is_number(columns[0])) { // Corridors
+                // Connections
+            } else {
+                // Corridors
+                if (is_number(columns[0])) {
                     char new_corridor_name[32] = "corridor_";
                     strcat(new_corridor_name, columns);
 
@@ -234,10 +246,12 @@ map *read_map(const char *fn)
                     connected_corridor->is_corridor = 1;
 
                     add_connection(target_room, connected_corridor);
-                } else if (is_letter(columns[0])) { // Rooms
+                    // Rooms
+                } else if (is_letter(columns[0])) {
                     room *connected_room = get_room(new_map, columns);
                     add_connection(target_room, connected_room);
-                } else if (columns[0] == '%') { // Ladder
+                    // Ladder
+                } else if (columns[0] == '%') {
                     room *ladder_room = add_room_if_not_exists(columns, new_map);
 
                     target_room->ladder_connection = ladder_room;
