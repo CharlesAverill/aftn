@@ -60,29 +60,72 @@ character characters[5] = {
      lambert_ability},
 };
 
+ability_output *new_ability_output()
+{
+    ability_output *out = (ability_output *)malloc(sizeof(ability_output));
+    out->use_action = true;
+    out->can_use_ability_again = true;
+    out->move_character_index = -1;
+    return out;
+}
+
 /**
  * The following are character abilities. Each take in the game map, the characters list, and the
  * active character.
  */
 
-void ripley_ability(map *game_map, character characters[5], character *active_character)
+ability_output *ripley_ability(map *game_map, character *characters[5], character *active_character)
+{
+    ability_output *out = new_ability_output();
+
+    printf("Pick a character to move:\n");
+    int i;
+    for (i = 0; i < 5; i++) {
+        if (characters[i] != NULL) {
+            printf("\t%d) %s at %s\n",
+                   i + 1,
+                   characters[i]->last_name,
+                   characters[i]->current_room->name);
+        } else {
+            break;
+        }
+    }
+    printf("\tb) Back\n");
+
+    char ch = '\0';
+    while (ch < '0' || ch > '0' + i) {
+        ch = get_character();
+
+        if (ch == 'b') {
+            break;
+        }
+    }
+
+    if (ch == 'b') {
+        out->use_action = false;
+        return out;
+    } else {
+        ch = ch - '0' - 1;
+        out->move_character_index = ch;
+    }
+
+    return out;
+}
+
+ability_output *dallas_ability(map *game_map, character *characters[5], character *active_character)
 {
 }
 
-void dallas_ability(map *game_map, character characters[5], character *active_character)
-{
-}
-
-void parker_ability(map *game_map, character characters[5], character *active_character)
+ability_output *parker_ability(map *game_map, character *characters[5], character *active_character)
 {
     active_character->num_scrap++;
-    active_character->current_actions--;
 }
 
-void brett_ability(map *game_map, character characters[5], character *active_character)
+ability_output *brett_ability(map *game_map, character *characters[5], character *active_character)
 {
 }
 
-void lambert_ability(map *game_map, character characters[5], character *active_character)
+ability_output *
+lambert_ability(map *game_map, character *characters[5], character *active_character)
 {
 }

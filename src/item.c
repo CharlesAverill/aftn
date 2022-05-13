@@ -27,7 +27,11 @@ int item_uses[7] = {-1, -1, 2, 2, 2, 1, 1};
  */
 void print_item(item *i)
 {
-    printf("%s: %d uses\n", item_names[i->type], i->uses);
+    if (i == NULL) {
+        printf("NONE\n");
+    } else {
+        printf("%s: %d uses\n", item_names[i->type], i->uses);
+    }
 }
 
 /**

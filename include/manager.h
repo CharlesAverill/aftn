@@ -42,7 +42,7 @@ room *character_move(game_manager *manager,
                      struct character *to_move,
                      dfs_results *allowed_moves,
                      bool allow_back);
-void xeno_move(game_manager *manager, int num_spaces, int morale_drop);
+bool xeno_move(game_manager *manager, int num_spaces, int morale_drop);
 void ash_move(game_manager *manager, int num_spaces);
 
 void reduce_morale(game_manager *manager, int lost);

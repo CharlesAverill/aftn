@@ -8,10 +8,19 @@
 #ifndef CHARACTER_H
 #define CHARACTER_H
 
+#include <stdbool.h>
+
 #include "item.h"
 #include "manager.h"
 #include "map/map.h"
 #include "map/room.h"
+#include "utils.h"
+
+typedef struct ability_output {
+    bool use_action;
+    bool can_use_ability_again;
+    int move_character_index;
+} ability_output;
 
 typedef struct character character;
 struct character {
@@ -30,15 +39,21 @@ struct character {
     room *current_room;
 
     char ability_description[128];
-    void (*ability_function)(map *, character *, character *);
+    ability_output *(*ability_function)(map *, character **, character *);
 };
 
-void ripley_ability(map *game_map, character characters[5], character *active_character);
-void dallas_ability(map *game_map, character characters[5], character *active_character);
-void parker_ability(map *game_map, character characters[5], character *active_character);
-void brett_ability(map *game_map, character characters[5], character *active_character);
-void lambert_ability(map *game_map, character characters[5], character *active_character);
+ability_output *
+ripley_ability(map *game_map, character *characters[5], character *active_character);
+ability_output *
+dallas_ability(map *game_map, character *characters[5], character *active_character);
+ability_output *
+parker_ability(map *game_map, character *characters[5], character *active_character);
+ability_output *brett_ability(map *game_map, character *characters[5], character *active_character);
+ability_output *
+lambert_ability(map *game_map, character *characters[5], character *active_character);
 
 extern character characters[5];
+
+ability_output *new_ability_output();
 
 #endif
