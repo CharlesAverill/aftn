@@ -291,8 +291,8 @@ bool xeno_move(game_manager *manager, int num_spaces, int morale_drop)
                 printf("The Xenomorph meets you in %s!\n", manager->xenomorph_location->name);
             }
 
-            flee(manager, manager->characters[i]);
             reduce_morale(manager, morale_drop);
+            flee(manager, manager->characters[i]);
         }
     }
 
