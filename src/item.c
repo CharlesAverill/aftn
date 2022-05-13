@@ -30,7 +30,12 @@ void print_item(item *i)
     if (i == NULL) {
         printf("NONE\n");
     } else {
-        printf("%s: %d uses\n", item_names[i->type], i->uses);
+        printf("%s:", item_names[i->type]);
+        if (i->uses >= 0) {
+            printf(" %d uses\n", i->uses);
+        } else {
+            printf(" inf uses\n");
+        }
     }
 }
 
@@ -40,10 +45,12 @@ void print_item(item *i)
  */
 void print_item_type(ITEM_TYPES type, int discount)
 {
-    printf("%s: Costs %d Scrap, %d uses\n",
-           item_names[type],
-           item_costs[type] - discount,
-           item_uses[type]);
+    printf("%s: Costs %d Scrap", item_names[type], item_costs[type] - discount);
+    if (item_uses[type] >= 0) {
+        printf(", %d uses\n", item_uses[type]);
+    } else {
+        printf(", inf uses\n");
+    }
 }
 
 /**

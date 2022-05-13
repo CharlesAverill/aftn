@@ -18,6 +18,9 @@ room *create_room(char name[32], bool is_corridor)
     new_room->has_event = false;
 
     new_room->num_items = 0;
+    for (int i = 0; i < 4; i++) {
+        new_room->room_items[i] = NULL;
+    }
 
     new_room->connection_count = 0;
     for (int i = 0; i < 8; i++) {
@@ -75,6 +78,24 @@ void print_room(room *r, bool prepend_tab)
     printf("%sName: %s\n", prepend, r->name);
     printf("%sType: %s\n", prepend, r->is_corridor ? "Corridor" : "Room");
     printf("%sScrap: %d\n", prepend, r->num_scrap);
+
+    printf("%sItems: ", prepend);
+    bool found_item = false;
+    for (int i = 0; i < 4; i++) {
+        if (r->room_items[i] != NULL) {
+            if (!found_item) {
+                found_item = true;
+                printf("\n");
+            }
+
+            printf("%s\t", prepend);
+            print_item(r->room_items[i]);
+        }
+    }
+    if (!found_item) {
+        printf("None\n");
+    }
+
     printf("%sHas Event: %s\n", prepend, r->has_event ? "True" : "False");
 
     printf("%sConnections: ", prepend);

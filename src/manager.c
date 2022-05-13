@@ -663,6 +663,7 @@ bool drop(game_manager *manager)
                         if (manager->active_character->current_room->room_items[m] == NULL) {
                             manager->active_character->current_room->room_items[m] =
                                 manager->active_character->coolant;
+                            break;
                         }
                     }
 
@@ -679,9 +680,11 @@ bool drop(game_manager *manager)
                         if (manager->active_character->current_room->room_items[l] == NULL) {
                             manager->active_character->current_room->room_items[l] =
                                 manager->active_character->held_items[k];
+                            break;
                         }
                     }
                     manager->active_character->current_room->num_items++;
+                    manager->active_character->num_items--;
 
                     manager->active_character->held_items[k] = NULL;
 
@@ -736,7 +739,7 @@ void game_loop(game_manager *manager)
                     ch = get_character();
 
                     bool break_loop = false;
-                    bool recognized = false;
+                    bool recognized = true;
 
                     switch (ch) {
                     case 'h':
@@ -850,19 +853,21 @@ void game_loop(game_manager *manager)
                         int cost_reduction = is_brett ? 1 : 0;
                         int num_craftable = 0;
                         int craftable_indices[NUM_ITEM_TYPES];
-                        for (int m = 0; m < NUM_ITEM_TYPES; m++) {
+                        int m;
+                        for (m = 0; m < NUM_ITEM_TYPES; m++) {
                             int cost = item_costs[m];
                             if (cost >= 2) {
                                 cost -= cost_reduction;
                             }
 
-                            if (cost <= manager->active_character->num_scrap) {
+                            if (cost <= manager->active_character->num_scrap &&
+                                m != COOLANT_CANISTER) {
                                 craftable_indices[num_craftable++] = m;
                                 printf("\t%d) ", num_craftable);
                                 print_item_type(m, cost_reduction);
                             }
                         }
-                        printf("\tb) Back");
+                        printf("\tb) Back\n");
 
                         char ch = '\0';
                         while (ch < '0' || ch > '0' + num_craftable) {
@@ -874,9 +879,21 @@ void game_loop(game_manager *manager)
                         }
 
                         if (ch == 'b') {
-
                             break;
                         } else {
+                            ch = ch - '0' - 1;
+                            ch = craftable_indices[ch];
+                            for (int n = 0; n < 3; n++) {
+                                if (manager->active_character->held_items[n] == NULL) {
+                                    manager->active_character->held_items[n] = new_item(ch);
+                                    break;
+                                }
+                            }
+                            printf("%s crafted %s\n",
+                                   manager->active_character->last_name,
+                                   item_names[ch]);
+                            manager->active_character->num_scrap -= item_costs[ch] - cost_reduction;
+                            manager->active_character->num_items++;
                         }
 
                         break_loop = true;

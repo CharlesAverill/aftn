@@ -15,13 +15,29 @@
  */
 room *get_room(map *game_map, const char *room_name)
 {
+    int index = get_room_index(game_map, room_name);
+    if (index >= 0) {
+        return game_map->rooms[index];
+    } else {
+        return NULL;
+    }
+}
+
+/**
+ * Retrieves the room index corresponding to a given room name
+ * @param  game_map                Map to look in
+ * @param  room_name               Name of room to look for
+ * @return           Index of room in game_map->rooms
+ */
+int get_room_index(map *game_map, const char *room_name)
+{
     for (int i = 0; i < game_map->room_count; i++) {
         if (strcmp(game_map->rooms[i]->name, room_name) == 0) {
-            return game_map->rooms[i];
+            return i;
         }
     }
 
-    return NULL;
+    return -1;
 }
 
 /**
@@ -264,7 +280,7 @@ map *read_map(const char *fn)
                     columns[0] == '$') {
                     target_room = add_room_if_not_exists(new_map, columns);
                     new_map->named_room_indices[new_map->named_room_count++] =
-                        new_map->room_count - 1;
+                        get_room_index(new_map, target_room->name);
                 }
                 // Chained corridors
                 else if (is_number(columns[0])) {

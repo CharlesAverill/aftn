@@ -45,6 +45,7 @@ typedef struct dfs_results {
 } dfs_results;
 
 room *get_room(map *game_map, const char *room_name);
+int get_room_index(map *game_map, const char *room_name);
 room *add_room_if_not_exists(map *game_map, char *room_name);
 
 dfs_results *new_dfs_results();
