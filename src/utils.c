@@ -92,6 +92,22 @@ int min(int a, int b)
 }
 
 /**
+ * Read character from stdin
+ * @return Input character
+ */
+char get_character()
+{
+    char *line = NULL;
+    size_t len = 0;
+    getline(&line, &len, stdin);
+
+    char ch = line[0];
+    free(line);
+
+    return ch;
+}
+
+/**
  * Initialize a new room_queue
  * @param  capacity               Maximum capacity of queue
  * @return          A pointer to an initialized room_queue

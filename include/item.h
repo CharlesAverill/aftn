@@ -9,6 +9,7 @@
 #define ITEM_H
 
 #include <stdio.h>
+#include <stdlib.h>
 
 typedef enum {
     FLASHLIGHT,
@@ -31,5 +32,7 @@ typedef struct item {
 
 void print_item(item *i);
 void print_item_type(ITEM_TYPES type);
+
+item *new_item(ITEM_TYPES type);
 
 #endif

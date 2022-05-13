@@ -38,12 +38,14 @@ game_manager *new_game(const arguments args, map *game_map)
 
     // Place initial events
     for (int i = 0; i < manager->game_map->event_room_count; i++) {
-        manager->game_map->scrap_rooms[i]->has_event = 1;
+        manager->game_map->event_rooms[i]->has_event = 1;
     }
 
     // Place initial coolant
     for (int i = 0; i < manager->game_map->coolant_room_count; i++) {
-        //manager->game_map->scrap_rooms[i]->num_scrap = 2;
+        manager->game_map->coolant_rooms[i]
+            ->room_items[manager->game_map->coolant_rooms[i]->num_items++] =
+            new_item(COOLANT_CANISTER);
     }
 
     // Game setup
@@ -80,7 +82,7 @@ game_manager *new_game(const arguments args, map *game_map)
 
         char ch = 0;
         while (ch < '0' || ch > '5') {
-            ch = getchar();
+            ch = get_character();
             if (ch == 'e') {
                 exit(0);
             }
@@ -140,8 +142,7 @@ room *character_move(game_manager *manager,
         }
 
         // Get input
-        getchar();
-        ch = getchar();
+        ch = get_character();
 
         int max_destination_index = allowed_moves == NULL ? to_move->current_room->connection_count
                                                           : allowed_moves->num_results;
@@ -483,8 +484,7 @@ void game_loop(game_manager *manager)
                            manager->active_character->current_actions,
                            manager->active_character->max_actions);
 
-                    getchar();
-                    ch = getchar();
+                    ch = get_character();
 
                     int break_loop = 0;
                     int recognized = 0;
@@ -541,7 +541,7 @@ void game_loop(game_manager *manager)
                             printf("There are no items or Scrap to pick up.\n");
                         } else {
                             // Print out options
-                            printf("Options:\n");
+                            printf("Pick up options:\n");
                             int option_index = 0;
 
                             // Print scrap
@@ -557,9 +557,13 @@ void game_loop(game_manager *manager)
                             int item_indices[4] = {-1, -1, -1, -1};
                             for (int k = 0; k < manager->active_character->current_room->num_items;
                                  k++) {
-                                item_indices[k] = option_index;
-                                printf("\t%d) ", ++option_index);
-                                print_item(manager->active_character->current_room->room_items[k]);
+                                if (manager->active_character->current_room->room_items[k] !=
+                                    NULL) {
+                                    item_indices[k] = option_index;
+                                    printf("\t%d) ", ++option_index);
+                                    print_item(
+                                        manager->active_character->current_room->room_items[k]);
+                                }
                             }
 
                             // Back
@@ -568,16 +572,17 @@ void game_loop(game_manager *manager)
                             // Read input
                             char ch = '\0';
                             while (ch < '0' || ch > '0' + option_index) {
-                                getchar();
-                                ch = getchar();
+                                ch = get_character();
 
                                 if (ch == 'b') {
+                                    recognized = 1;
                                     break;
                                 }
                             }
 
                             // Process input
                             if (ch == 'b') {
+                                recognized = 1;
                                 break;
                             } else {
                                 int selection_index = ch - '0' - 1;
@@ -589,8 +594,7 @@ void game_loop(game_manager *manager)
                                     ch = '\0';
                                     while (ch < '1' || ch > '0' + manager->active_character
                                                                       ->current_room->num_scrap) {
-                                        getchar();
-                                        ch = getchar();
+                                        ch = get_character();
                                     }
 
                                     printf("%s picked up %d Scrap\n",
@@ -599,9 +603,51 @@ void game_loop(game_manager *manager)
                                     manager->active_character->current_room->num_scrap -= ch - '0';
                                     manager->active_character->num_scrap += ch - '0';
                                 } else {
-                                }
+                                    item *target_item = NULL;
+                                    int m;
+                                    for (m = 0; m < 4; m++) {
+                                        if (item_indices[m] == selection_index) {
+                                            target_item = manager->active_character->current_room
+                                                              ->room_items[m];
+                                            break;
+                                        }
+                                    }
 
-                                break_loop = 1;
+                                    if (target_item->type == COOLANT_CANISTER) {
+                                        if (manager->active_character->coolant == NULL) {
+                                            printf("%s picked up the COOLANT CANISTER\n",
+                                                   manager->active_character->last_name);
+                                            manager->active_character->current_room->room_items[m] =
+                                                NULL;
+                                            manager->active_character->coolant = target_item;
+                                            break_loop = 1;
+                                        } else {
+                                            printf("%s is already holding a COOLANT CANISTER\n",
+                                                   manager->active_character->last_name);
+                                        }
+                                    } else {
+                                        if (manager->active_character->num_items < 3) {
+                                            for (int l = 0; l < 3; l++) {
+                                                if (manager->active_character->held_items[l] ==
+                                                    NULL) {
+                                                    manager->active_character->held_items[l] =
+                                                        target_item;
+                                                    break;
+                                                }
+                                            }
+                                            manager->active_character->num_items++;
+
+                                            manager->active_character->current_room->num_items--;
+                                            manager->active_character->current_room->room_items[m] =
+                                                NULL;
+
+                                            break_loop = 1;
+                                        } else {
+                                            printf("%s is already holding 3 items\n",
+                                                   manager->active_character->last_name);
+                                        }
+                                    }
+                                }
                             }
                         }
 
@@ -609,12 +655,13 @@ void game_loop(game_manager *manager)
                         break;
                     case 'd':
                         if (manager->active_character->num_scrap == 0 &&
-                            manager->active_character->num_items == 0) {
+                            manager->active_character->num_items == 0 &&
+                            manager->active_character->coolant == NULL) {
                             printf("%s has no items or Scrap to drop.\n",
                                    manager->active_character->last_name);
                         } else {
                             // Print out options
-                            printf("Options:\n");
+                            printf("Drop options:\n");
                             int option_index = 0;
 
                             // Print scrap
@@ -628,10 +675,20 @@ void game_loop(game_manager *manager)
 
                             // Print character items
                             int item_indices[3] = {-1, -1, -1};
-                            for (int k = 0; k < manager->active_character->num_items; k++) {
-                                item_indices[k] = option_index;
+                            for (int k = 0; k < 3; k++) {
+                                if (manager->active_character->held_items[k] != NULL) {
+                                    item_indices[k] = option_index;
+                                    printf("\t%d) ", ++option_index);
+                                    print_item(manager->active_character->held_items[k]);
+                                }
+                            }
+
+                            // Coolant
+                            int coolant_index = -1;
+                            if (manager->active_character->coolant != NULL) {
+                                coolant_index = option_index;
                                 printf("\t%d) ", ++option_index);
-                                print_item(manager->active_character->held_items[k]);
+                                print_item(manager->active_character->coolant);
                             }
 
                             // Back
@@ -640,16 +697,17 @@ void game_loop(game_manager *manager)
                             // Read input
                             char ch = '\0';
                             while (ch < '0' || ch > '0' + option_index) {
-                                getchar();
-                                ch = getchar();
+                                ch = get_character();
 
                                 if (ch == 'b') {
+                                    recognized = 1;
                                     break;
                                 }
                             }
 
                             // Process input
                             if (ch == 'b') {
+                                recognized = 1;
                                 break;
                             } else {
                                 int selection_index = ch - '0' - 1;
@@ -661,8 +719,7 @@ void game_loop(game_manager *manager)
                                     ch = '\0';
                                     while (ch < '1' ||
                                            ch > '0' + manager->active_character->num_scrap) {
-                                        getchar();
-                                        ch = getchar();
+                                        ch = get_character();
                                     }
 
                                     printf("%s dropped %d Scrap\n",
@@ -670,14 +727,60 @@ void game_loop(game_manager *manager)
                                            ch - '0');
                                     manager->active_character->current_room->num_scrap += ch - '0';
                                     manager->active_character->num_scrap -= ch - '0';
-                                } else {
-                                }
+                                } else if (manager->active_character->current_room->num_items < 4) {
+                                    item *target_item = NULL;
+                                    int k;
+                                    for (k = 0; k < 3; k++) {
+                                        if (item_indices[k] == selection_index) {
+                                            target_item = manager->active_character->held_items[k];
+                                            break;
+                                        }
+                                    }
 
-                                break_loop = 1;
+                                    if (selection_index == coolant_index) {
+                                        printf("%s dropped a COOLANT CANISTER in %s\n",
+                                               manager->active_character->last_name,
+                                               manager->active_character->current_room->name);
+
+                                        for (int m = 0; m < 4; m++) {
+                                            if (manager->active_character->current_room
+                                                    ->room_items[m] == NULL) {
+                                                manager->active_character->current_room
+                                                    ->room_items[m] =
+                                                    manager->active_character->coolant;
+                                            }
+                                        }
+
+                                        manager->active_character->coolant = NULL;
+
+                                        break_loop = 1;
+                                    } else {
+                                        printf("%s dropped a %s in %s\n",
+                                               manager->active_character->last_name,
+                                               item_names[target_item->type],
+                                               manager->active_character->current_room->name);
+
+                                        for (int l = 0; l < 4; l++) {
+                                            if (manager->active_character->current_room
+                                                    ->room_items[l] == NULL) {
+                                                manager->active_character->current_room
+                                                    ->room_items[l] =
+                                                    manager->active_character->held_items[k];
+                                            }
+                                        }
+                                        manager->active_character->current_room->num_items++;
+
+                                        manager->active_character->held_items[k] = NULL;
+
+                                        break_loop = 1;
+                                    }
+                                } else {
+                                    printf("%s already has 4 items\n",
+                                           manager->active_character->current_room->name);
+                                }
                             }
                         }
 
-                        break_loop = 1;
                         recognized = 1;
                         break;
                     case 'a':
@@ -735,8 +838,7 @@ void game_loop(game_manager *manager)
                     case 'e':
                         printf("Are you sure you want to exit? Game progress will not be saved. "
                                "(y/n)\n");
-                        getchar();
-                        if (getchar() == 'y') {
+                        if (get_character() == 'y') {
                             exit(0);
                         }
 

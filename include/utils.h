@@ -28,6 +28,8 @@ bool is_number(char c);
 int max(int a, int b);
 int min(int a, int b);
 
+char get_character();
+
 // Used for Xebo and Ash BFS
 struct room_queue {
     int size;
