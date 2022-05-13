@@ -7,9 +7,9 @@
 
 #include "arguments.h"
 
-#include <stdlib.h>
-#include <string.h>
-
+/**
+ * argp function to parse options
+ */
 error_t parse_opt(int key, char *arg, struct argp_state *state)
 {
     struct arguments *arguments = state->input;

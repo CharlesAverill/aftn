@@ -8,9 +8,13 @@
 #ifndef MANAGER_H
 #define MANAGER_H
 
+#include <limits.h>
+#include <stdlib.h>
+#include <time.h>
+
 #include "arguments.h"
 #include "character.h"
-#include "encounter.h"
+#include "map/encounter.h"
 #include "map/map.h"
 #include "map/room.h"
 #include "utils.h"
@@ -34,18 +38,16 @@ struct game_manager {
 
 game_manager *new_game(const arguments args, map *game_map);
 
-int randint(int low, int high);
-
 room *character_move(game_manager *manager,
                      struct character *to_move,
                      dfs_results *allowed_moves,
-                     int allow_back);
-room *xeno_move(game_manager *manager, int num_spaces, int morale_drop);
-room *ash_move(game_manager *manager, int num_spaces);
+                     bool allow_back);
+void xeno_move(game_manager *manager, int num_spaces, int morale_drop);
+void ash_move(game_manager *manager, int num_spaces);
 
 void reduce_morale(game_manager *manager, int lost);
 int trigger_event(game_manager *manager, struct character *moved);
-int trigger_encounter(game_manager *manager);
+void trigger_encounter(game_manager *manager);
 void flee(game_manager *manager, struct character *moved);
 
 struct room_queue *shortest_path(map *game_map, room *from, room *to);

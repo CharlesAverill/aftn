@@ -5,9 +5,7 @@
  * @brief Description
 */
 
-#include "encounter.h"
-
-#include "manager.h"
+#include "map/encounter.h"
 
 int num_encounters = ENCOUNTER_STACK_SIZE;
 ENCOUNTER_TYPES encounters[ENCOUNTER_STACK_SIZE] = {
@@ -37,6 +35,9 @@ ENCOUNTER_TYPES encounters[ENCOUNTER_STACK_SIZE] = {
 ENCOUNTER_TYPES discard_encounters[ENCOUNTER_STACK_SIZE] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 
+/**
+ * Shuffle the encounters deck
+ */
 void shuffle_encounters()
 {
     for (int i = ENCOUNTER_STACK_SIZE - 1; i > 0; i--) {
@@ -48,7 +49,10 @@ void shuffle_encounters()
     }
 }
 
-// Returns index of drawn encounter in discard_encounters
+/**
+ * Draws an encounter card, discards it, and returns the index of the card in discard_encounters
+ * @return Index of the card in discard_encounters
+ */
 int draw_encounter()
 {
     if (num_encounters <= 0) {
@@ -58,7 +62,10 @@ int draw_encounter()
     return discard_encounter();
 }
 
-// Moves card from top of encounters stack to discard_encounters stack
+/**
+ * Moves card from top of encounters stack to top of discard_encounters stack
+ * @return index of discarded card in discard_encounters
+ */
 int discard_encounter()
 {
     discard_encounters[ENCOUNTER_STACK_SIZE - num_encounters] = encounters[num_encounters - 1];
@@ -67,6 +74,9 @@ int discard_encounter()
     return ENCOUNTER_STACK_SIZE - num_encounters - 1;
 }
 
+/**
+ * Moves card from top of discard_encounters stack to top of encounters stack
+ */
 void replace_encounter()
 {
     encounters[num_encounters] = discard_encounters[ENCOUNTER_STACK_SIZE - num_encounters - 1];
@@ -74,10 +84,16 @@ void replace_encounter()
     num_encounters++;
 }
 
+/**
+ * Replaces all alien cards in discard_encounters
+ */
 void replace_alien_cards()
 {
 }
 
+/**
+ * Replaces all order937 cards in discard_encounters
+ */
 void replace_order937_cards()
 {
 }

@@ -8,16 +8,22 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <string.h>
+#include <strings.h>
+
 #include "map/room.h"
+
+int randint(int low, int high);
 
 void strip_string(char *str, int len);
 void trim_string(char *str, int size);
 
-int is_letter(char c);
-int is_number(char c);
+bool is_letter(char c);
+bool is_number(char c);
 
 int max(int a, int b);
 int min(int a, int b);
@@ -30,11 +36,11 @@ struct room_queue {
     room *tail;
 };
 
-struct room_queue *newQueue(int capacity);
+struct room_queue *new_room_queue(int capacity);
 void print_queue(struct room_queue *q);
 int push(struct room_queue *q, room *node);
 room *pop(struct room_queue *q);
 room *pop_tail(struct room_queue *q);
-int queue_contains(struct room_queue *q, room *target);
+bool queue_contains(struct room_queue *q, room *target);
 
 #endif

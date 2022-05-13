@@ -5,13 +5,9 @@
  * @brief Description
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "map/room.h"
 
-room *create_room(char name[32], int is_corridor)
+room *create_room(char name[32], bool is_corridor)
 {
     room *new_room = (room *)malloc(sizeof(room));
 
@@ -19,7 +15,7 @@ room *create_room(char name[32], int is_corridor)
     new_room->is_corridor = is_corridor;
 
     new_room->num_scrap = 0;
-    new_room->has_event = 0;
+    new_room->has_event = false;
 
     new_room->connection_count = 0;
     for (int i = 0; i < 8; i++) {
@@ -28,7 +24,7 @@ room *create_room(char name[32], int is_corridor)
     new_room->ladder_connection = NULL;
 
     new_room->search_distance = -1;
-    new_room->search_discovered = 0;
+    new_room->search_discovered = false;
     new_room->search_previous_room = NULL;
 
     new_room->room_queue_next = NULL;
@@ -46,10 +42,10 @@ void add_connection(room *a, room *b)
         exit(1);
     }
 
-    int found = 0;
+    bool found = false;
     for (int i = 0; i < a->connection_count; i++) {
         if (a->connections[i] == b) {
-            found = 1;
+            found = true;
             break;
         }
     }
@@ -58,10 +54,10 @@ void add_connection(room *a, room *b)
         a->connection_count++;
     }
 
-    found = 0;
+    found = false;
     for (int i = 0; i < b->connection_count; i++) {
         if (b->connections[i] == a) {
-            found = 1;
+            found = true;
             break;
         }
     }
@@ -71,7 +67,7 @@ void add_connection(room *a, room *b)
     }
 }
 
-void print_room(room *r, int prepend_tab)
+void print_room(room *r, bool prepend_tab)
 {
     char *prepend = prepend_tab ? "\t" : "";
     printf("%sName: %s\n", prepend, r->name);

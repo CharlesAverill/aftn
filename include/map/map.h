@@ -8,7 +8,13 @@
 #ifndef MAP_H
 #define MAP_H
 
-#include "room.h"
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "map/room.h"
+#include "utils.h"
 
 typedef struct map {
     char name[32];
@@ -39,10 +45,11 @@ typedef struct dfs_results {
 } dfs_results;
 
 room *get_room(map *game_map, const char *room_name);
+room *add_room_if_not_exists(map *game_map, char *room_name);
 
 dfs_results *new_dfs_results();
 void reset_search(map *game_map, int distance);
-dfs_results *find_rooms_by_distance(map *game_map, room *start_room, int distance, int inclusive);
+dfs_results *find_rooms_by_distance(map *game_map, room *start_room, int distance, bool inclusive);
 
 map *read_map(const char *fn);
 void print_map(const map *game_map);

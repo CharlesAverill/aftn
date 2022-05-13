@@ -6,7 +6,6 @@
 */
 
 #include "character.h"
-#include "manager.h"
 
 character characters[5] = {
     {"Ripley",
@@ -56,6 +55,11 @@ character characters[5] = {
      "Spend an action: Look at the upcoming encounter, you may move it to later.",
      lambert_ability},
 };
+
+/**
+ * The following are character abilities. Each take in the game map, the characters list, and the
+ * active character.
+ */
 
 void ripley_ability(map *game_map, character characters[5], character *active_character)
 {

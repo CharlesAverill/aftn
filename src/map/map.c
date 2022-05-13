@@ -5,14 +5,14 @@
  * @brief Description
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "map/map.h"
-#include "map/room.h"
-#include "utils.h"
 
+/**
+ * Retrieves the room pointer corresponding to a given room name
+ * @param  game_map                Map to look in
+ * @param  room_name               Name of room to look for
+ * @return           Pointer to room struct with name `room_name`
+ */
 room *get_room(map *game_map, const char *room_name)
 {
     for (int i = 0; i < game_map->room_count; i++) {
@@ -24,44 +24,59 @@ room *get_room(map *game_map, const char *room_name)
     return NULL;
 }
 
-room *add_room_if_not_exists(char *room_name, map *new_map)
+/**
+ * Creates a new room with name `room_name` and adds it to `game_map` if another with the same
+ * name does not exist
+ * @param  room_name               Name of room to create
+ * @param  game_map                Map to add room to
+ * @return           Pointer to new room, or existing room if room with name `room_name` exists
+ */
+room *add_room_if_not_exists(map *game_map, char *room_name)
 {
-    int is_player_start = 0;
-    int is_alien_start = 0;
-    int is_ash_start = 0;
+    bool is_player_start = false;
+    bool is_alien_start = false;
+    bool is_ash_start = false;
     if (room_name[0] == '&') {
+        // Alien start room
         trim_string(room_name, -1);
-        is_alien_start = 1;
+        is_alien_start = true;
     } else if (room_name[0] == '*') {
+        // Player start room
         trim_string(room_name, -1);
-        is_player_start = 1;
+        is_player_start = true;
     } else if (room_name[0] == '$') {
+        // Ash start room
         trim_string(room_name, -1);
-        is_ash_start = 1;
+        is_ash_start = true;
     } else if (room_name[0] == '%') {
+        // Ladder connection
         trim_string(room_name, -1);
     }
 
-    room *already_exists_check = get_room(new_map, room_name);
+    room *already_exists_check = get_room(game_map, room_name);
     if (already_exists_check != NULL) {
         return already_exists_check;
     }
 
     room *new_room = create_room(room_name, 0);
-    new_map->rooms[new_map->room_count] = new_room;
-    new_map->room_count++;
+    game_map->rooms[game_map->room_count] = new_room;
+    game_map->room_count++;
 
     if (is_player_start) {
-        new_map->player_start_room = new_room;
+        game_map->player_start_room = new_room;
     } else if (is_alien_start) {
-        new_map->xenomorph_start_room = new_room;
+        game_map->xenomorph_start_room = new_room;
     } else if (is_ash_start) {
-        new_map->ash_start_room = new_room;
+        game_map->ash_start_room = new_room;
     }
 
     return new_room;
 }
 
+/**
+ * Initialize a dfs_results struct
+ * @return Pointer to an initialized dfs_results struct
+ */
 dfs_results *new_dfs_results()
 {
     dfs_results *out = (dfs_results *)malloc(sizeof(dfs_results));
@@ -69,16 +84,26 @@ dfs_results *new_dfs_results()
     return out;
 }
 
+/**
+ * Reset the search parameters of a map to prepare for a search
+ * @param game_map  Map whose rooms' search parameters will be reset
+ * @param distance  Distance to set room->search_distance to. Djikstra uses INT_MAX, DFS
+ *                  uses -1
+ */
 void reset_search(map *game_map, int distance)
 {
     for (int i = 0; i < game_map->room_count; i++) {
         game_map->rooms[i]->search_distance = distance;
-        game_map->rooms[i]->search_discovered = 0;
+        game_map->rooms[i]->search_discovered = false;
         game_map->rooms[i]->search_previous_room = NULL;
     }
 }
 
-// Modified DFS
+/**
+ * A modified DFS that finds rooms that are `distance` edges away
+ * @param start_room  Room to start search from
+ * @param distance    Distance at which to look for rooms
+ */
 void _find_rooms_by_distance_recurse(room *start_room, int distance)
 {
     start_room->search_distance = distance;
@@ -95,7 +120,15 @@ void _find_rooms_by_distance_recurse(room *start_room, int distance)
     }
 }
 
-dfs_results *find_rooms_by_distance(map *game_map, room *start_room, int distance, int inclusive)
+/**
+ * Finds rooms within or exactly of a certain distance from a provided starting room
+ * @param  game_map                 Map to search in
+ * @param  start_room               Room to start searching from
+ * @param  distance                 Distance to search up to or exactly to
+ * @param  inclusive                If true, results will include rooms up to `distance` edges away
+ * @return            A pointer to a dfs_results object of the matching rooms
+ */
+dfs_results *find_rooms_by_distance(map *game_map, room *start_room, int distance, bool inclusive)
 {
     dfs_results *results = new_dfs_results();
 
@@ -115,6 +148,11 @@ dfs_results *find_rooms_by_distance(map *game_map, room *start_room, int distanc
     return results;
 }
 
+/**
+ * Reads in a map from a map file
+ * @param  fn               Filename of map file
+ * @return    Pointer to new map
+ */
 map *read_map(const char *fn)
 {
     // Allocate space for map
@@ -224,7 +262,7 @@ map *read_map(const char *fn)
                 // Named room
                 if (is_letter(columns[0]) || columns[0] == '&' || columns[0] == '*' ||
                     columns[0] == '$') {
-                    target_room = add_room_if_not_exists(columns, new_map);
+                    target_room = add_room_if_not_exists(new_map, columns);
                     new_map->named_room_indices[new_map->named_room_count++] =
                         new_map->room_count - 1;
                 }
@@ -242,8 +280,8 @@ map *read_map(const char *fn)
                     char new_corridor_name[32] = "corridor_";
                     strcat(new_corridor_name, columns);
 
-                    room *connected_corridor = add_room_if_not_exists(new_corridor_name, new_map);
-                    connected_corridor->is_corridor = 1;
+                    room *connected_corridor = add_room_if_not_exists(new_map, new_corridor_name);
+                    connected_corridor->is_corridor = true;
 
                     add_connection(target_room, connected_corridor);
                     // Rooms
@@ -252,7 +290,7 @@ map *read_map(const char *fn)
                     add_connection(target_room, connected_room);
                     // Ladder
                 } else if (columns[0] == '%') {
-                    room *ladder_room = add_room_if_not_exists(columns, new_map);
+                    room *ladder_room = add_room_if_not_exists(new_map, columns);
 
                     target_room->ladder_connection = ladder_room;
                     ladder_room->ladder_connection = target_room;
@@ -277,6 +315,10 @@ map *read_map(const char *fn)
     return new_map;
 }
 
+/**
+ * Print out a text representation of the map
+ * @param game_map  The map to print out
+ */
 void print_map(const map *game_map)
 {
     printf("---NAME---\n%s\n\n", game_map->name);

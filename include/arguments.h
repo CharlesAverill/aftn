@@ -9,6 +9,8 @@
 #define ARGUMENTS_H
 
 #include <argp.h>
+#include <stdlib.h>
+#include <string.h>
 
 typedef struct arguments {
     int n_players;

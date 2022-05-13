@@ -7,14 +7,12 @@
 
 #include "manager.h"
 
-#include <limits.h>
-#include <stdlib.h>
-#include <time.h>
-
-#include "character.h"
-#include "encounter.h"
-#include "map/map.h"
-
+/**
+ * Creates new game manager
+ * @param  args                   Command-line arguments read with argp
+ * @param  game_map               The processed game map
+ * @return          Pointer to the new game manager
+ */
 game_manager *new_game(const arguments args, map *game_map)
 {
     game_manager *manager = (game_manager *)malloc(sizeof(game_manager));
@@ -105,15 +103,18 @@ game_manager *new_game(const arguments args, map *game_map)
     return manager;
 }
 
-int randint(int low, int high)
-{
-    return (rand() % (high - low + 1)) + low;
-}
-
+/**
+ * Move a character
+ * @param  manager                     Game manager
+ * @param  to_move                     Character to move
+ * @param  allowed_moves               dfs_results containing allowed destinations
+ * @param  allow_back                  Whether or not to allow the user to exit the movement menu
+ * @return               Pointer to the room the player moved the character to
+ */
 room *character_move(game_manager *manager,
                      struct character *to_move,
                      dfs_results *allowed_moves,
-                     int allow_back)
+                     bool allow_back)
 {
     // Get selection
     char ch = '\0';
@@ -160,6 +161,13 @@ room *character_move(game_manager *manager,
     return NULL;
 }
 
+/**
+ * Find the shortest path between two rooms using a modified Djikstra's algorithm
+ * @param  game_map               Game map
+ * @param  source                 Source room
+ * @param  target                 Target room
+ * @return          A room queue containing the path [target ... source]
+ */
 struct room_queue *shortest_path(map *game_map, room *source, room *target)
 {
     // Set all to unvisited and distance to inf
@@ -168,7 +176,7 @@ struct room_queue *shortest_path(map *game_map, room *source, room *target)
     source->search_distance = 0;
 
     // Create queue of rooms
-    struct room_queue *rq = newQueue(64);
+    struct room_queue *rq = new_room_queue(64);
     for (int i = 0; i < game_map->room_count; i++) {
         push(rq, game_map->rooms[i]);
     }
@@ -187,7 +195,7 @@ struct room_queue *shortest_path(map *game_map, room *source, room *target)
         }
 
         if (min_node == target) {
-            struct room_queue *shortest_path = newQueue(64);
+            struct room_queue *shortest_path = new_room_queue(64);
             if (min_node->search_previous_room != NULL || min_node == source) {
                 while (min_node != NULL) {
                     push(shortest_path, min_node);
@@ -235,9 +243,15 @@ struct room_queue *shortest_path(map *game_map, room *source, room *target)
     return NULL;
 }
 
-// Modified Djikstra
-room *xeno_move(game_manager *manager, int num_spaces, int morale_drop)
+/**
+ * Move the xenomorph towards the nearest player and check for interceptions
+ * @param  manager                   Game manager
+ * @param  num_spaces                Maximum number of spaces to move the xenomorph
+ * @param  morale_drop               Number of morale points to lose if an interception occurs
+ */
+void xeno_move(game_manager *manager, int num_spaces, int morale_drop)
 {
+    // Get shortest path to a character
     struct room_queue *shortest = NULL;
     int s = INT_MAX;
     for (int i = 0; i < manager->character_count; i++) {
@@ -250,15 +264,17 @@ room *xeno_move(game_manager *manager, int num_spaces, int morale_drop)
         }
     }
 
+    // Move xeno along path
     if (s < num_spaces) {
         manager->xenomorph_location = shortest->tail;
-    } else {
+    } else if (num_spaces > 0) {
         for (int i = 0; i < num_spaces && shortest->head->room_queue_next != NULL; i++) {
             pop_tail(shortest);
         }
         manager->xenomorph_location = shortest->tail;
     }
 
+    // Check if xeno intercepts characters
     int printed_message = 0;
     for (int i = 0; i < manager->character_count; i++) {
         if (manager->characters[i]->current_room == manager->xenomorph_location) {
@@ -266,15 +282,27 @@ room *xeno_move(game_manager *manager, int num_spaces, int morale_drop)
                 printed_message = 1;
                 printf("The Xenomorph meets you in %s!\n", manager->xenomorph_location);
             }
+
             flee(manager, manager->characters[i]);
+            reduce_morale(manager, morale_drop);
         }
     }
 }
 
-room *ash_move(game_manager *manager, int num_spaces)
+/**
+ * Move Ash towards the nearest player, stop if he reaches Scrap
+ * @param  manager                  Game manager
+ * @param  num_spaces               Maximum number of spaces to move Ash
+ */
+void ash_move(game_manager *manager, int num_spaces)
 {
 }
 
+/**
+ * Reduce the morale of the team and check for a game over
+ * @param manager  Game manager
+ * @param lost     Number of morale to lose
+ */
 void reduce_morale(game_manager *manager, int lost)
 {
     for (int i = 0; i < manager->character_count; i++) {
@@ -289,6 +317,12 @@ void reduce_morale(game_manager *manager, int lost)
     }
 }
 
+/**
+ * Check for and trigger any events in the new location of the character `moved`
+ * @param  manager               Game manager
+ * @param  moved                 Character that was just moved
+ * @return         0 if Safe event, 1 if Jonesy event, 2 if Xenomorph event, -1 if no event
+ */
 int trigger_event(game_manager *manager, struct character *moved)
 {
     if (moved->current_room->has_event) {
@@ -322,10 +356,14 @@ int trigger_event(game_manager *manager, struct character *moved)
         }
     }
 
-    return 0;
+    return -1;
 }
 
-int trigger_encounter(game_manager *manager)
+/**
+ * Draw an encounter card and execute it
+ * @param  manager               Game manager
+ */
+void trigger_encounter(game_manager *manager)
 {
     int discard_index = draw_encounter();
     ENCOUNTER_TYPES encounter = discard_encounters[discard_index];
@@ -355,7 +393,7 @@ int trigger_encounter(game_manager *manager)
                manager->game_map->xenomorph_start_room->name);
 
         manager->xenomorph_location = manager->game_map->xenomorph_start_room;
-        //xeno_move(manager, 0, 2);
+        xeno_move(manager, 0, 2);
         replace_alien_cards();
 
         break;
@@ -396,15 +434,24 @@ int trigger_encounter(game_manager *manager)
     }
 }
 
+/**
+ * Force a character to move 3 spaces away
+ * @param manager  Game manager
+ * @param moved    Character to flee
+ */
 void flee(game_manager *manager, struct character *moved)
 {
     printf("%s must flee 3 spaces:\n", moved->last_name);
 
     dfs_results *allowed_moves =
         find_rooms_by_distance(manager->game_map, moved->current_room, 3, 0);
-    moved->current_room = character_move(manager, moved, allowed_moves, 0);
+    moved->current_room = character_move(manager, moved, allowed_moves, false);
 }
 
+/**
+ * Main game loop, handles player input and game logic
+ * @param manager  Game manager
+ */
 void game_loop(game_manager *manager)
 {
     while (1) {
@@ -460,20 +507,28 @@ void game_loop(game_manager *manager)
                     case 'm':; // Start case with assignment
                         room *last_room = manager->active_character->current_room;
                         manager->active_character->current_room =
-                            character_move(manager, manager->active_character, NULL, 1);
+                            character_move(manager, manager->active_character, NULL, true);
                         if (manager->active_character->current_room == last_room) {
+                            // Move canceled
                             printf("Canceled move\n");
                         } else {
+                            // Move successful
                             printf("Moved %s from %s to %s\n",
                                    manager->active_character->last_name,
                                    last_room->name,
                                    manager->active_character->current_room->name);
+
+                            // Check for events in new location
                             if (trigger_event(manager, manager->active_character) ==
                                 2) { // Alien encounter
                                 // Immediately end turn and don't do an encounter
                                 j = 0;
                                 do_encounter = 0;
                             }
+
+                            // Check if player moved into xeno area
+                            xeno_move(manager, 0, 2);
+
                             break_loop = 1;
                         }
 
