@@ -144,11 +144,12 @@ lambert_ability(map *game_map, character *characters[5], character *active_chara
     printf("Confirm use of this ability? (y/n) ");
 
     char ch;
-    while(ch != 'y' && ch != 'n') {
+    while (ch != 'y' && ch != 'n') {
         ch = get_character();
     }
 
-    if(ch == 'n') {
+    if (ch == 'n') {
+        out->use_action = false;
         return out;
     }
 
