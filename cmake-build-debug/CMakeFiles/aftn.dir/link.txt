@@ -1,1 +1,0 @@
-/usr/bin/cc -g   CMakeFiles/aftn.dir/src/arguments.c.o CMakeFiles/aftn.dir/src/character.c.o CMakeFiles/aftn.dir/src/encounter.c.o CMakeFiles/aftn.dir/src/main.c.o CMakeFiles/aftn.dir/src/manager.c.o CMakeFiles/aftn.dir/src/map/map.c.o CMakeFiles/aftn.dir/src/map/room.c.o CMakeFiles/aftn.dir/src/utils.c.o  -o ../bin/aftn 

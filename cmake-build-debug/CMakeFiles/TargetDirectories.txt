@@ -1,3 +1,0 @@
-/home/charlesaverill/CProjects/aftn/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/home/charlesaverill/CProjects/aftn/cmake-build-debug/CMakeFiles/aftn.dir
-/home/charlesaverill/CProjects/aftn/cmake-build-debug/CMakeFiles/edit_cache.dir
