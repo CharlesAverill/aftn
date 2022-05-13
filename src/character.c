@@ -141,6 +141,17 @@ lambert_ability(map *game_map, character *characters[5], character *active_chara
 {
     ability_output *out = new_ability_output();
 
+    printf("Confirm use of this ability? (y/n) ");
+
+    char ch;
+    while(ch != 'y' && ch != 'n') {
+        ch = get_character();
+    }
+
+    if(ch == 'n') {
+        return out;
+    }
+
     int discard_index = draw_encounter();
     ENCOUNTER_TYPES encounter = discard_encounters[discard_index];
 
@@ -148,7 +159,7 @@ lambert_ability(map *game_map, character *characters[5], character *active_chara
 
     printf("Discard this encounter? (y/n) ");
 
-    char ch;
+    ch = '\0';
     while (ch != 'y' && ch != 'n') {
         ch = get_character();
     }
