@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define NUM_ITEM_TYPES 7
+
 typedef enum {
     FLASHLIGHT,
     MOTION_TRACKER,
@@ -21,9 +23,9 @@ typedef enum {
     COOLANT_CANISTER
 } ITEM_TYPES;
 
-extern int item_costs[7];
-extern char *item_names[7];
-extern int item_uses[7];
+extern int item_costs[NUM_ITEM_TYPES];
+extern char *item_names[NUM_ITEM_TYPES];
+extern int item_uses[NUM_ITEM_TYPES];
 
 typedef struct item {
     ITEM_TYPES type;
@@ -31,7 +33,7 @@ typedef struct item {
 } item;
 
 void print_item(item *i);
-void print_item_type(ITEM_TYPES type);
+void print_item_type(ITEM_TYPES type, int discount);
 
 item *new_item(ITEM_TYPES type);
 

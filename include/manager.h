@@ -50,8 +50,8 @@ int trigger_event(game_manager *manager, struct character *moved);
 void trigger_encounter(game_manager *manager);
 void flee(game_manager *manager, struct character *moved);
 
-int pickup(game_manager *manager);
-int drop(game_manager *manager);
+bool pickup(game_manager *manager);
+bool drop(game_manager *manager);
 
 struct room_queue *shortest_path(map *game_map, room *from, room *to);
 

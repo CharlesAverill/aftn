@@ -147,6 +147,12 @@ ability_output *parker_ability(map *game_map, character *characters[5], characte
 
 ability_output *brett_ability(map *game_map, character *characters[5], character *active_character)
 {
+    ability_output *out = new_ability_output();
+    out->use_action = false;
+
+    printf("This ability is latent.\n");
+
+    return out;
 }
 
 ability_output *

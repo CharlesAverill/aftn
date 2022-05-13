@@ -457,11 +457,10 @@ void flee(game_manager *manager, struct character *moved)
 /**
  * Pickup handler
  * @param manager  Game manager
- * @return         0 if break_loop and recognized are false, 1 if recognized=true, 2 if break_loop=true, 3 if both are true
+ * @return         False if break_loop is false, else true
  */
-int pickup(game_manager *manager)
+bool pickup(game_manager *manager)
 {
-    bool recognized = false;
     bool break_loop = false;
 
     if (manager->active_character->current_room->num_scrap == 0 &&
@@ -500,13 +499,13 @@ int pickup(game_manager *manager)
             ch = get_character();
 
             if (ch == 'b') {
-                return 1;
+                break;
             }
         }
 
         // Process input
         if (ch == 'b') {
-            return 1;
+            return false;
         } else {
             int selection_index = ch - '0' - 1;
 
@@ -568,23 +567,16 @@ int pickup(game_manager *manager)
         }
     }
 
-    recognized = true;
-
-    if (!break_loop) {
-        return 1;
-    } else {
-        return 3;
-    }
+    return break_loop;
 }
 
 /**
  * Drop handler
  * @param manager  Game manager
- * @return         0 if break_loop and recognized are false, 1 if only break_loop, 2 if only recognized, 3 if both are true
+ * @return         False if break_loop is false, else true
  */
-int drop(game_manager *manager)
+bool drop(game_manager *manager)
 {
-    bool recognized = false;
     bool break_loop = false;
 
     if (manager->active_character->num_scrap == 0 && manager->active_character->num_items == 0 &&
@@ -629,13 +621,13 @@ int drop(game_manager *manager)
             ch = get_character();
 
             if (ch == 'b') {
-                return 1;
+                break;
             }
         }
 
         // Process input
         if (ch == 'b') {
-            return 1;
+            return false;
         } else {
             int selection_index = ch - '0' - 1;
 
@@ -701,13 +693,7 @@ int drop(game_manager *manager)
         }
     }
 
-    recognized = true;
-
-    if (!break_loop) {
-        return 1;
-    } else {
-        return 3;
-    }
+    return break_loop;
 }
 
 /**
@@ -768,7 +754,6 @@ void game_loop(game_manager *manager)
                                "r - print text map\n"
                                "e - exit\n");
 
-                        recognized = true;
                         break;
                     case 'm':; // Start case with assignment
                         room *last_room = manager->active_character->current_room;
@@ -801,47 +786,12 @@ void game_loop(game_manager *manager)
                             break_loop = true;
                         }
 
-                        recognized = true;
                         break;
                     case 'p':
-                        switch (pickup(manager)) {
-                        case 0:
-                            break_loop = false;
-                            recognized = false;
-                            break;
-                        case 1:
-                            break_loop = false;
-                            recognized = true;
-                            break;
-                        case 2:
-                            break_loop = true;
-                            recognized = false;
-                            break;
-                        case 3:
-                            break_loop = true;
-                            recognized = true;
-                            break;
-                        }
+                        break_loop = pickup(manager);
                         break;
                     case 'd':
-                        switch (drop(manager)) {
-                        case 0:
-                            break_loop = false;
-                            recognized = false;
-                            break;
-                        case 1:
-                            break_loop = false;
-                            recognized = true;
-                            break;
-                        case 2:
-                            break_loop = true;
-                            recognized = false;
-                            break;
-                        case 3:
-                            break_loop = true;
-                            recognized = true;
-                            break;
-                        }
+                        break_loop = drop(manager);
                         break;
                     case 'a':
                         if (!used_ability) {
@@ -872,7 +822,6 @@ void game_loop(game_manager *manager)
                             printf("You may only use this ability once per turn.\n");
                         }
 
-                        recognized = true;
                         break;
                     case 'i':
                         printf("%s's Inventory:\n", manager->active_character->last_name);
@@ -885,30 +834,69 @@ void game_loop(game_manager *manager)
                         printf("\t\t");
                         print_item(manager->active_character->coolant);
 
-                        recognized = true;
                         break;
                     case 'c':
-                        printf("Craft\n");
+                        if (manager->active_character->num_scrap == 0) {
+                            printf("%s has no Scrap\n", manager->active_character->last_name);
+
+                            break;
+                        }
+
+                        printf("Craft Options:\n");
+
+                        bool is_brett =
+                            manager->active_character->ability_function == brett_ability;
+
+                        int cost_reduction = is_brett ? 1 : 0;
+                        int num_craftable = 0;
+                        int craftable_indices[NUM_ITEM_TYPES];
+                        for (int m = 0; m < NUM_ITEM_TYPES; m++) {
+                            int cost = item_costs[m];
+                            if (cost >= 2) {
+                                cost -= cost_reduction;
+                            }
+
+                            if (cost <= manager->active_character->num_scrap) {
+                                craftable_indices[num_craftable++] = m;
+                                printf("\t%d) ", num_craftable);
+                                print_item_type(m, cost_reduction);
+                            }
+                        }
+                        printf("\tb) Back");
+
+                        char ch = '\0';
+                        while (ch < '0' || ch > '0' + num_craftable) {
+                            ch = get_character();
+
+                            if (ch == 'b') {
+                                break;
+                            }
+                        }
+
+                        if (ch == 'b') {
+
+                            break;
+                        } else {
+                        }
 
                         break_loop = true;
-                        recognized = true;
+
                         break;
                     case 'u':
                         printf("Use item\n");
 
                         break_loop = true;
-                        recognized = true;
+
                         break;
                     case 't':
                         printf("Trade\n");
 
                         break_loop = true;
-                        recognized = true;
+
                         break;
                     case 'v':
                         print_room(manager->active_character->current_room, 1);
 
-                        recognized = true;
                         break;
                     case 'l':
                         for (int i = 0; i < manager->character_count; i++) {
@@ -921,17 +909,14 @@ void game_loop(game_manager *manager)
                             printf("Ash at %s\n", manager->ash_location->name);
                         }
 
-                        recognized = true;
                         break;
                     case 'q':
                         printf("%s\n", manager->game_map->ascii_map);
 
-                        recognized = true;
                         break;
                     case 'r':
                         print_map(manager->game_map);
 
-                        recognized = true;
                         break;
                     case 'e':
                         printf("Are you sure you want to exit? Game progress will not be saved. "
@@ -940,7 +925,10 @@ void game_loop(game_manager *manager)
                             exit(0);
                         }
 
-                        recognized = true;
+                        break;
+                    default:
+                        recognized = false;
+                        break;
                     }
 
                     if (break_loop) {

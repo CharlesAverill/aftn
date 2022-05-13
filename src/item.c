@@ -7,9 +7,9 @@
 
 #include "item.h"
 
-int item_costs[7] = {2, 3, 3, 4, 3, 1, -1};
+int item_costs[NUM_ITEM_TYPES] = {2, 3, 3, 4, 3, 1, -1};
 
-char *item_names[7] = {
+char *item_names[NUM_ITEM_TYPES] = {
     "FLASHLIGHT",
     "MOTION TRACKER",
     "GRAPPLE GUN",
@@ -19,7 +19,7 @@ char *item_names[7] = {
     "COOLANT CANISTER",
 };
 
-int item_uses[7] = {-1, -1, 2, 2, 2, 1, 1};
+int item_uses[NUM_ITEM_TYPES] = {-1, -1, 2, 2, 2, 1, 1};
 
 /**
  * Print the details of an existing item
@@ -38,9 +38,12 @@ void print_item(item *i)
  * Print the details of an item type
  * @param type  Type of item to print
  */
-void print_item_type(ITEM_TYPES type)
+void print_item_type(ITEM_TYPES type, int discount)
 {
-    printf("%s: Costs %d Scrap, %d uses\n", item_names[type], item_costs[type], item_uses[type]);
+    printf("%s: Costs %d Scrap, %d uses\n",
+           item_names[type],
+           item_costs[type] - discount,
+           item_uses[type]);
 }
 
 /**
