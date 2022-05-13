@@ -56,7 +56,7 @@ character characters[5] = {
      {0, 0, 0},
      0,
      0,
-     "Spend an action: Look at the upcoming encounter, you may move it to later.",
+     "Spend an action: Look at the upcoming encounter, you may discard it.",
      lambert_ability},
 };
 
@@ -114,11 +114,22 @@ ability_output *ripley_ability(map *game_map, character *characters[5], characte
 
 ability_output *dallas_ability(map *game_map, character *characters[5], character *active_character)
 {
+    ability_output *out = new_ability_output();
+    out->use_action = false;
+
+    //printf("%s has no ability\n", active_character->last_name);
+
+    return out;
 }
 
 ability_output *parker_ability(map *game_map, character *characters[5], character *active_character)
 {
+    ability_output *out = new_ability_output();
+    out->can_use_ability_again = false;
+
     active_character->num_scrap++;
+
+    return out;
 }
 
 ability_output *brett_ability(map *game_map, character *characters[5], character *active_character)
@@ -128,4 +139,23 @@ ability_output *brett_ability(map *game_map, character *characters[5], character
 ability_output *
 lambert_ability(map *game_map, character *characters[5], character *active_character)
 {
+    ability_output *out = new_ability_output();
+
+    int discard_index = draw_encounter();
+    ENCOUNTER_TYPES encounter = discard_encounters[discard_index];
+
+    printf("Drawn encounter: %s\n", encounter_names[encounter]);
+
+    printf("Discard this encounter? (y/n) ");
+
+    char ch;
+    while (ch != 'y' && ch != 'n') {
+        ch = get_character();
+    }
+
+    if (ch == 'n') {
+        replace_encounter();
+    }
+
+    return out;
 }

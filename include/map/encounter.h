@@ -8,6 +8,8 @@
 #ifndef ENCOUNTER_H
 #define ENCOUNTER_H
 
+#include <stdlib.h>
+
 typedef enum {
     QUIET,
     ALIEN_Lost_The_Signal,
@@ -17,6 +19,8 @@ typedef enum {
     ORDER937_Crew_Expendable,
     ORDER937_Collating_Data
 } ENCOUNTER_TYPES;
+
+extern char *encounter_names[7];
 
 #define ENCOUNTER_STACK_SIZE 21
 extern int num_encounters;

@@ -7,6 +7,14 @@
 
 #include "map/encounter.h"
 
+char *encounter_names[7] = {"QUIET",
+                            "ALIEN - Lost The Signal",
+                            "ALIEN - Stalk",
+                            "ALIEN - Hunt",
+                            "ORDER 937 - Meet Me In The Infirmary",
+                            "ORDER 937 - Crew Expendable",
+                            "ORDER 937 - Collating Data"};
+
 int num_encounters = ENCOUNTER_STACK_SIZE;
 ENCOUNTER_TYPES encounters[ENCOUNTER_STACK_SIZE] = {
     QUIET,
