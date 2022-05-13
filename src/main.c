@@ -87,5 +87,14 @@ int main(int argc, char *argv[])
     // Start game loop
     game_loop(manager);
 
+    for (int i = 0; i < game_map->room_count; i++) {
+        free(game_map->rooms[i]);
+    }
+
+    free(game_map->ascii_map);
+    free(game_map);
+
+    free(manager);
+
     return 0;
 }

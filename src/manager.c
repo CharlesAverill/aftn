@@ -203,6 +203,7 @@ struct room_queue *shortest_path(map *game_map, room *source, room *target)
                     min_node = min_node->search_previous_room;
                 }
 
+                free(rq);
                 return shortest_path;
             }
         }
@@ -241,6 +242,7 @@ struct room_queue *shortest_path(map *game_map, room *source, room *target)
         }
     }
 
+    free(rq);
     return NULL;
 }
 
@@ -261,6 +263,10 @@ bool xeno_move(game_manager *manager, int num_spaces, int morale_drop)
             manager->game_map, manager->xenomorph_location, manager->characters[i]->current_room);
 
         if (rq != NULL && rq->size < s) {
+            if (shortest != NULL) {
+                free(shortest);
+            }
+
             shortest = rq;
             s = rq->size;
         }
@@ -289,6 +295,8 @@ bool xeno_move(game_manager *manager, int num_spaces, int morale_drop)
             reduce_morale(manager, morale_drop);
         }
     }
+
+    free(shortest);
 
     return printed_message;
 }
@@ -452,6 +460,7 @@ void flee(game_manager *manager, struct character *moved)
     dfs_results *allowed_moves =
         find_rooms_by_distance(manager->game_map, moved->current_room, 3, 0);
     moved->current_room = character_move(manager, moved, allowed_moves, false);
+    free(allowed_moves);
 }
 
 /**
@@ -821,6 +830,8 @@ void game_loop(game_manager *manager)
                                        manager->characters[ao->move_character_index]
                                            ->current_room->name);
                             }
+
+                            free(ao);
                         } else {
                             printf("You may only use this ability once per turn.\n");
                         }
