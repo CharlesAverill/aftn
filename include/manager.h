@@ -2,7 +2,7 @@
  * @file
  * @author Charles Averill
  * @date   12-May-2022
- * @brief Description
+ * @brief The game_manager structure and accompanying function headers
 */
 
 #ifndef MANAGER_H
@@ -20,24 +20,38 @@
 #include "objective.h"
 #include "utils.h"
 
+// Structure holding all game data
 typedef struct game_manager game_manager;
 struct game_manager {
+    // Team morale, game ends when this reaches 0
     int morale;
+
+    // Number of objectives to complete before the final mission is revealed
     int num_objectives;
+    // Array of objectives to complete before the final mission is revealed
     objective *game_objectives;
 
+    // Pointer to the game's map
     map *game_map;
 
+    // Pointer to the xenomorph's current location
     room *xenomorph_location;
+    // Pointer to Ash's current location
     room *ash_location;
 
+    // Whether or not Jonesy has been caught in a cat carrier
     bool jonesy_caught;
 
+    // Counter of how many rounds have occurred
     int round_index;
+    // Counter of how many of a character's turns have occurred
     int turn_index;
 
+    // Number of characters in the game
     int character_count;
+    // Array of characters in the game
     struct character *characters[5];
+    // The character that is currently acting
     struct character *active_character;
 };
 

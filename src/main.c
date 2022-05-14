@@ -2,7 +2,7 @@
  * @file
  * @author Charles Averill
  * @date   11-May-2022
- * @brief Description
+ * @brief Driver code - reads map file and starts game loop. Also holds some argparse data.
  */
 
 #include <stdio.h>
@@ -42,10 +42,10 @@ int main(int argc, char *argv[])
     struct arguments arguments;
     arguments.n_players = 1;
     arguments.n_characters = 1;
-    arguments.use_ash = 0;
+    arguments.use_ash = false;
     strcpy(arguments.game_file, DEFAULT_MAP);
-    arguments.print_map = 0;
-    arguments.draw_map = 0;
+    arguments.print_map = false;
+    arguments.draw_map = false;
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
     if (arguments.n_players > 1) {

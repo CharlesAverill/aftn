@@ -2,7 +2,7 @@
  * @file
  * @author Charles Averill <charlesaverill>
  * @date   13-May-2022
- * @brief Description
+ * @brief Logic and data for objectives
 */
 
 #include "objective.h"

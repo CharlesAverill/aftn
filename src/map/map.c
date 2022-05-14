@@ -2,7 +2,7 @@
  * @file
  * @author Charles Averill
  * @date   11-May-2022
- * @brief Description
+ * @brief Logic for maps, including map file processing
 */
 
 #include "map/map.h"

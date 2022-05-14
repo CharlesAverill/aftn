@@ -2,7 +2,7 @@
  * @file
  * @author Charles Averill
  * @date   11-May-2022
- * @brief Description
+ * @brief Argument parsing logic
 */
 
 #include "arguments.h"
@@ -22,16 +22,16 @@ error_t parse_opt(int key, char *arg, struct argp_state *state)
         arguments->n_characters = atoi(arg);
         break;
     case 'a':
-        arguments->use_ash = 1;
+        arguments->use_ash = true;
         break;
     case 'g':
         strcpy(arguments->game_file, arg);
         break;
     case 'p':
-        arguments->print_map = 1;
+        arguments->print_map = true;
         break;
     case 'd':
-        arguments->draw_map = 1;
+        arguments->draw_map = true;
         break;
     case ARGP_KEY_ARG:
         // Too many arguments, if your program expects only one argument.

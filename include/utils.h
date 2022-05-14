@@ -2,7 +2,7 @@
  * @file
  * @author Charles Averill
  * @date   11-May-2022
- * @brief Description
+ * @brief String and integer util function headers, and the room_queue structure
 */
 
 #ifndef UTILS_H
@@ -30,7 +30,7 @@ int min(int a, int b);
 
 char get_character();
 
-// Used for Xebo and Ash BFS
+// Used for Xeno and Ash trajectory planning
 struct room_queue {
     int size;
     int max_size;

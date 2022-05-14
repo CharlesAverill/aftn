@@ -2,7 +2,7 @@
  * @file
  * @author Charles Averill
  * @date   11-May-2022
- * @brief Description
+ * @brief Logic for rooms
 */
 
 #include "map/room.h"

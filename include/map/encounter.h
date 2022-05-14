@@ -2,7 +2,7 @@
  * @file
  * @author Charles Averill <charlesaverill>
  * @date   12-May-2022
- * @brief Description
+ * @brief The encounter structure and accompanying function headers
 */
 
 #ifndef ENCOUNTER_H
@@ -10,6 +10,7 @@
 
 #include <stdlib.h>
 
+// Enum of different types of encounter
 typedef enum {
     QUIET,
     ALIEN_Lost_The_Signal,
@@ -22,7 +23,9 @@ typedef enum {
 
 extern char *encounter_names[7];
 
+// The number of encounters in the encounter stack
 #define ENCOUNTER_STACK_SIZE 21
+
 extern int num_encounters;
 extern ENCOUNTER_TYPES encounters[ENCOUNTER_STACK_SIZE];
 extern ENCOUNTER_TYPES discard_encounters[ENCOUNTER_STACK_SIZE];

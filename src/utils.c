@@ -2,7 +2,7 @@
  * @file
  * @author Charles Averill
  * @date   11-May-2022
- * @brief Description
+ * @brief String and integer utils, and logic for the room_queue structure
 */
 
 #include "utils.h"
