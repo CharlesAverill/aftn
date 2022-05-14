@@ -17,11 +17,14 @@
 #include "map/encounter.h"
 #include "map/map.h"
 #include "map/room.h"
+#include "objective.h"
 #include "utils.h"
 
 typedef struct game_manager game_manager;
 struct game_manager {
     int morale;
+    int num_objectives;
+    objective *game_objectives;
 
     map *game_map;
 
@@ -38,10 +41,9 @@ struct game_manager {
 
 game_manager *new_game(const arguments args, map *game_map);
 
-room *character_move(game_manager *manager,
-                     struct character *to_move,
-                     dfs_results *allowed_moves,
-                     bool allow_back);
+void print_game_objectives(game_manager *manager);
+
+room *character_move(game_manager *manager, struct character *to_move, dfs_results *allowed_moves, bool allow_back);
 bool xeno_move(game_manager *manager, int num_spaces, int morale_drop);
 void ash_move(game_manager *manager, int num_spaces);
 

@@ -82,10 +82,7 @@ ability_output *ripley_ability(map *game_map, character *characters[5], characte
     int i;
     for (i = 0; i < 5; i++) {
         if (characters[i] != NULL) {
-            printf("\t%d) %s at %s\n",
-                   i + 1,
-                   characters[i]->last_name,
-                   characters[i]->current_room->name);
+            printf("\t%d) %s at %s\n", i + 1, characters[i]->last_name, characters[i]->current_room->name);
         } else {
             break;
         }
@@ -155,8 +152,7 @@ ability_output *brett_ability(map *game_map, character *characters[5], character
     return out;
 }
 
-ability_output *
-lambert_ability(map *game_map, character *characters[5], character *active_character)
+ability_output *lambert_ability(map *game_map, character *characters[5], character *active_character)
 {
     ability_output *out = new_ability_output();
 

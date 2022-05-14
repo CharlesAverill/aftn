@@ -21,19 +21,18 @@ const char *argp_program_bug_address = "charles@utdallas.edu";
 static char doc[] = "A C port of Alien: Fate of The Nostromo, a 2021 board game of the same name";
 static char args_doc[] = "";
 
-static struct argp_option options[] = {
-    {"n_players", 'n', "integer", 0, "Number of players to create"},
-    {"n_characters", 'c', "integer", 0, "Number of characters to create"},
-    {"use_ash", 'a', 0, 0, "Include Ash for a more challenging game"},
-    {"game",
-     'g',
-     "FILE",
-     0,
-     "Read game board from this path rather than the default. Check "
-     "/var/games/aftn/maps/format.txt to create your own game boards"},
-    {"print_map", 'p', 0, 0, "Print out a text representation of the game map"},
-    {"draw_map", 'd', 0, 0, "Draw the game map if an ASCII map is provided"},
-    {0}};
+static struct argp_option options[] = {{"n_players", 'n', "integer", 0, "Number of players to create"},
+                                       {"n_characters", 'c', "integer", 0, "Number of characters to create"},
+                                       {"use_ash", 'a', 0, 0, "Include Ash for a more challenging game"},
+                                       {"game",
+                                        'g',
+                                        "FILE",
+                                        0,
+                                        "Read game board from this path rather than the default. Check "
+                                        "/var/games/aftn/maps/format.txt to create your own game boards"},
+                                       {"print_map", 'p', 0, 0, "Print out a text representation of the game map"},
+                                       {"draw_map", 'd', 0, 0, "Draw the game map if an ASCII map is provided"},
+                                       {0}};
 
 static struct argp argp = {options, parse_opt, args_doc, doc, 0, 0, 0};
 

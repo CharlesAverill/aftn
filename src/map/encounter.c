@@ -40,8 +40,8 @@ ENCOUNTER_TYPES encounters[ENCOUNTER_STACK_SIZE] = {
     ORDER937_Collating_Data,
 };
 
-ENCOUNTER_TYPES discard_encounters[ENCOUNTER_STACK_SIZE] = {
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+ENCOUNTER_TYPES discard_encounters[ENCOUNTER_STACK_SIZE] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                                                            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 
 /**
  * Shuffle the encounters deck
@@ -51,7 +51,7 @@ void shuffle_encounters()
     for (int i = ENCOUNTER_STACK_SIZE - 1; i > 0; i--) {
         int j = rand() % (i + 1);
 
-        int tmp = encounters[i];
+        ENCOUNTER_TYPES tmp = encounters[i];
         encounters[i] = encounters[j];
         encounters[j] = tmp;
     }

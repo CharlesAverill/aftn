@@ -130,8 +130,7 @@ void _find_rooms_by_distance_recurse(room *start_room, int distance)
         }
     }
 
-    if (start_room->ladder_connection != NULL &&
-        start_room->ladder_connection->search_distance == -1) {
+    if (start_room->ladder_connection != NULL && start_room->ladder_connection->search_distance == -1) {
         _find_rooms_by_distance_recurse(start_room->ladder_connection, distance + 1);
     }
 }
@@ -276,8 +275,7 @@ map *read_map(const char *fn)
 
             if (column_index == 0) {
                 // Named room
-                if (is_letter(columns[0]) || columns[0] == '&' || columns[0] == '*' ||
-                    columns[0] == '$') {
+                if (is_letter(columns[0]) || columns[0] == '&' || columns[0] == '*' || columns[0] == '$') {
                     target_room = add_room_if_not_exists(new_map, columns);
                     new_map->named_room_indices[new_map->named_room_count++] =
                         get_room_index(new_map, target_room->name);

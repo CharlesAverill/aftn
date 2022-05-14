@@ -42,15 +42,11 @@ struct character {
     ability_output *(*ability_function)(map *, character **, character *);
 };
 
-ability_output *
-ripley_ability(map *game_map, character *characters[5], character *active_character);
-ability_output *
-dallas_ability(map *game_map, character *characters[5], character *active_character);
-ability_output *
-parker_ability(map *game_map, character *characters[5], character *active_character);
+ability_output *ripley_ability(map *game_map, character *characters[5], character *active_character);
+ability_output *dallas_ability(map *game_map, character *characters[5], character *active_character);
+ability_output *parker_ability(map *game_map, character *characters[5], character *active_character);
 ability_output *brett_ability(map *game_map, character *characters[5], character *active_character);
-ability_output *
-lambert_ability(map *game_map, character *characters[5], character *active_character);
+ability_output *lambert_ability(map *game_map, character *characters[5], character *active_character);
 
 extern character characters[5];
 
