@@ -977,7 +977,6 @@ bool use(game_manager *manager)
             ch = ch - '0' - 1;
 
             ITEM_TYPES item_type = manager->active_character->held_items[ch]->type;
-            use_item(manager->active_character, manager->active_character->held_items[ch]);
 
             switch (item_type) {
             case MOTION_TRACKER:;
@@ -1015,6 +1014,7 @@ bool use(game_manager *manager)
                         return false;
                     } else {
                         ch = ch - '0' - 1;
+                        use_item(manager->active_character, manager->active_character->held_items[ch]);
                         trigger_event(manager, manager->active_character, poll_position(within_2, event_rooms[ch]));
 
                         break_loop = true;
@@ -1023,7 +1023,18 @@ bool use(game_manager *manager)
                 break;
             case GRAPPLE_GUN:
                 break;
-            case INCINERATOR:
+            case INCINERATOR:;
+                room_queue *rq = shortest_path(
+                    manager->game_map, manager->xenomorph_location, manager->active_character->current_room);
+                if (rq->size > 4) {
+                    printf("The Xenomorph is not within 3 spaces.\n");
+                    return false;
+                } else {
+                    use_item(manager->active_character, manager->active_character->held_items[ch]);
+                    printf("The Xenomorph retreats to %s!\n", manager->game_map->xenomorph_start_room->name);
+                    manager->xenomorph_location = manager->game_map->xenomorph_start_room;
+                    break_loop = true;
+                }
                 break;
             }
         }
