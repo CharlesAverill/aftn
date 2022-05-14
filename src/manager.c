@@ -513,7 +513,6 @@ int trigger_event(game_manager *manager, struct character *moved, room *motion_t
     room *target_room = is_motion_tracker ? motion_tracker_room : moved->current_room;
     if (target_room->has_event) {
         int event_type = randint(1, 12);
-        event_type = 12;
         target_room->has_event = false;
 
         if (event_type <= 8) {
