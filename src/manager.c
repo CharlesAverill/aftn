@@ -113,8 +113,11 @@ game_manager *new_game(const arguments args, map *game_map)
         if (tmp != NULL) {
             manager->game_objectives[i].location = tmp;
         } else {
-            printf("[WARNING] - Objective room names are hardcoded, should have a room of name %s.\nSetting location to %s.\n", manager->game_objectives[i].location_name, manager->player_start_location->name);
-            manager->game_objectives[i].location = manager->player_start_location;
+            printf("[WARNING] - Objective room names are hardcoded, should have a room of name %s.\nSetting location "
+                   "to %s.\n",
+                   manager->game_objectives[i].location_name,
+                   manager->game_map->player_start_room->name);
+            manager->game_objectives[i].location = manager->game_map->player_start_room;
         }
     }
 

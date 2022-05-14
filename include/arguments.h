@@ -9,6 +9,7 @@
 #define ARGUMENTS_H
 
 #include <argp.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
