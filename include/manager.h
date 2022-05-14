@@ -71,7 +71,7 @@ void flee(game_manager *manager, struct character *moved);
 
 bool pickup(game_manager *manager);
 bool drop(game_manager *manager);
-bool use(game_manager *manager);
+int use(game_manager *manager);
 
 room_queue *shortest_path(map *game_map, room *from, room *to);
 

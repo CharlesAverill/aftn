@@ -406,6 +406,52 @@ bool xeno_move(game_manager *manager, int num_spaces, int morale_drop)
  */
 void ash_move(game_manager *manager, int num_spaces)
 {
+    /*
+    // Get shortest path to a character
+    room_queue *shortest = NULL;
+    int s = INT_MAX;
+    for (int i = 0; i < manager->character_count; i++) {
+        room_queue *rq =
+            shortest_path(manager->game_map, manager->xenomorph_location, manager->characters[i]->current_room);
+
+        if (rq != NULL && rq->size < s) {
+            if (shortest != NULL) {
+                free(shortest);
+            }
+
+            shortest = rq;
+            s = rq->size;
+        }
+    }
+
+    // Move xeno along path
+    if (s < num_spaces) {
+        manager->xenomorph_location = shortest->tail;
+    } else if (num_spaces > 0) {
+        for (int i = 0; i < num_spaces && shortest->head->room_queue_next != NULL; i++) {
+            pop_tail(shortest);
+        }
+        manager->xenomorph_location = shortest->tail;
+    }
+
+    // Check if xeno intercepts characters
+    bool printed_message = false;
+    for (int i = 0; i < manager->character_count; i++) {
+        if (manager->characters[i]->current_room == manager->xenomorph_location) {
+            if (!printed_message) {
+                printed_message = true;
+                printf("The Xenomorph meets you in %s!\n", manager->xenomorph_location->name);
+            }
+
+            reduce_morale(manager, morale_drop, true);
+            flee(manager, manager->characters[i]);
+        }
+    }
+
+    free(shortest);
+
+    return printed_message;
+     */
 }
 
 /**
@@ -936,11 +982,11 @@ bool drop(game_manager *manager)
 /**
  * Use item handler
  * @param  manager               Game manager
- * @return         False if break_loop is false, else true
+ * @return         0 if break_loop is false, 1 if it's true, 2 if it's true and don't do an encounter this turn
  */
-bool use(game_manager *manager)
+int use(game_manager *manager)
 {
-    bool break_loop = false;
+    int break_loop = 0;
 
     int usable_indices[3];
     int num_usable = 0;
@@ -952,7 +998,7 @@ bool use(game_manager *manager)
 
     if (num_usable == 0) {
         printf("%s has no items that can be used.\n", manager->active_character->last_name);
-        return false;
+        return 0;
     } else {
         printf("Use options:\n");
 
@@ -972,7 +1018,7 @@ bool use(game_manager *manager)
         }
 
         if (ch == 'b') {
-            return false;
+            return 0;
         } else {
             ch = ch - '0' - 1;
 
@@ -1011,23 +1057,27 @@ bool use(game_manager *manager)
                     }
 
                     if (ch == 'b') {
-                        return false;
+                        free(within_2);
+                        return 0;
                     } else {
                         ch = ch - '0' - 1;
                         use_item(manager->active_character, manager->active_character->held_items[ch]);
                         trigger_event(manager, manager->active_character, poll_position(within_2, event_rooms[ch]));
 
-                        break_loop = true;
+                        break_loop = 1;
                     }
                 }
+                free(within_2);
                 break;
             case GRAPPLE_GUN:;
-                if (shortest_path(
-                        manager->game_map, manager->xenomorph_location, manager->active_character->current_room)
-                        ->size > 4) {
+                room_queue *grapple_q = shortest_path(
+                    manager->game_map, manager->xenomorph_location, manager->active_character->current_room);
+                if (grapple_q->size > 4) {
                     printf("The Xenomorph is not within 3 spaces.\n");
-                    return false;
+                    free(grapple_q);
+                    return 0;
                 } else {
+                    free(grapple_q);
                     room_queue *alien_locations =
                         find_rooms_by_distance(manager->game_map, manager->xenomorph_location, 3, false);
 
@@ -1047,29 +1097,32 @@ bool use(game_manager *manager)
                     }
 
                     if (ch == 'b') {
-                        return false;
+                        free(alien_locations);
+                        return 0;
                     } else {
                         ch = ch - '0' - 1;
                         use_item(manager->active_character, manager->active_character->held_items[ch]);
                         printf("The Xenomorph retreats to %s!\n", poll_position(alien_locations, ch)->name);
                         manager->xenomorph_location = poll_position(alien_locations, ch);
                     }
-
-                    break_loop = true;
+                    free(alien_locations);
+                    break_loop = 1;
                 }
                 break;
             case INCINERATOR:;
-                if (shortest_path(
-                        manager->game_map, manager->xenomorph_location, manager->active_character->current_room)
-                        ->size > 4) {
+                room_queue *incinerator_q = shortest_path(
+                    manager->game_map, manager->xenomorph_location, manager->active_character->current_room);
+                if (incinerator_q->size > 4) {
                     printf("The Xenomorph is not within 3 spaces.\n");
-                    return false;
+                    free(incinerator_q);
+                    return 0;
                 } else {
                     use_item(manager->active_character, manager->active_character->held_items[ch]);
                     printf("The Xenomorph retreats to %s!\n", manager->game_map->xenomorph_start_room->name);
                     manager->xenomorph_location = manager->game_map->xenomorph_start_room;
-                    break_loop = true;
+                    break_loop = 2;
                 }
+                free(incinerator_q);
                 break;
             }
         }
@@ -1290,7 +1343,11 @@ void game_loop(game_manager *manager)
 
                         break;
                     case 'u':
-                        break_loop = use(manager);
+                        int u = use(manager);
+                        if(u != 0) {
+                            break_loop = true;
+                            do_encounter &= u == 2;
+                        }
 
                         break;
                     case 't':
