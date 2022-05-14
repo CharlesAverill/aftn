@@ -31,6 +31,8 @@ struct game_manager {
     room *xenomorph_location;
     room *ash_location;
 
+    bool jonesy_caught;
+
     int round_index;
     int turn_index;
 

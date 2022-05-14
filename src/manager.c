@@ -115,6 +115,9 @@ game_manager *new_game(const arguments args, map *game_map)
         }
     }
 
+    // Jonesy setup
+    manager->jonesy_caught = false;
+
     // Shuffle encounter deck
     shuffle_encounters();
 
@@ -408,10 +411,11 @@ void ash_move(game_manager *manager, int num_spaces)
  */
 int reduce_morale(game_manager *manager, int lost, bool encountered_alien)
 {
-    // Check for flashlights and electric prods
+    // Check for flashlights, electric prods, and cat carriers
     character *char_has_flashlight;
     bool has_flashlight = false;
     int flashlight_index;
+
     character *char_has_prod;
     bool has_prod = false;
     int prod_index;
@@ -442,7 +446,7 @@ int reduce_morale(game_manager *manager, int lost, bool encountered_alien)
 
             if (ch == 'y') {
                 lost = min(0, lost - 1);
-                use_item(char_has_flashlight, flashlight_index);
+                use_item(char_has_flashlight, char_has_flashlight->held_items[flashlight_index]);
             }
         } else {
             printf("%s has an ELECTRIC PROD. Use it to reduce morale lost by 2? (y/n) ", char_has_prod->last_name);
@@ -453,7 +457,7 @@ int reduce_morale(game_manager *manager, int lost, bool encountered_alien)
 
             if (ch == 'y') {
                 lost = min(0, lost - 2);
-                use_item(char_has_prod, prod_index);
+                use_item(char_has_prod, char_has_prod->held_items[prod_index]);
             }
         }
     } else if (has_flashlight && has_prod) {
@@ -473,10 +477,10 @@ int reduce_morale(game_manager *manager, int lost, bool encountered_alien)
 
         if (ch == '1') {
             lost = min(0, lost - 2);
-            use_item(char_has_prod, prod_index);
+            use_item(char_has_prod, char_has_prod->held_items[prod_index]);
         } else if (ch == '2') {
             lost = min(0, lost - 1);
-            use_item(char_has_flashlight, flashlight_index);
+            use_item(char_has_flashlight, char_has_flashlight->held_items[flashlight_index]);
         }
     }
 
@@ -500,6 +504,7 @@ int trigger_event(game_manager *manager, struct character *moved)
 {
     if (moved->current_room->has_event) {
         int event_type = randint(1, 12);
+        event_type = 9;
         moved->current_room->has_event = false;
 
         if (event_type <= 8) {
@@ -507,13 +512,39 @@ int trigger_event(game_manager *manager, struct character *moved)
 
             return 0;
         } else if (event_type <= 10) {
-            printf("[EVENT] - Jonesy\n");
-            printf("Jonesy hisses at you!\n");
+            if (manager->jonesy_caught) {
+                printf("[EVENT] - Safe\n");
 
-            int dropped = reduce_morale(manager, 1, false);
+                return 0;
+            } else {
+                printf("[EVENT] - Jonesy\n");
+                printf("Jonesy hisses at you!\n");
 
-            if (dropped > 0) {
-                printf("Morale decreases by %d.\n", dropped);
+                for (int i = 0; i < 3; i++) {
+                    if (moved->held_items[i] != NULL && moved->held_items[i]->type == CAT_CARRIER) {
+                        printf("%s has a CAT CARRIER - use it to catch Jonesy? (y/n) ", moved->last_name);
+
+                        char ch = '\0';
+                        while (ch != 'y' && ch != 'n') {
+                            ch = get_character();
+                        }
+
+                        if (ch == 'y') {
+                            printf("%s used the CAT CARRIER to catch Jonesy.\n", moved->last_name);
+                            manager->jonesy_caught = true;
+                            moved->held_items[i] = NULL;
+                        }
+                        break;
+                    }
+                }
+
+                if (!manager->jonesy_caught) {
+                    int dropped = reduce_morale(manager, 1, false);
+
+                    if (dropped > 0) {
+                        printf("Morale decreases by %d.\n", dropped);
+                    }
+                }
             }
 
             return 1;

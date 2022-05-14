@@ -68,7 +68,6 @@ character characters[5] = {
  */
 bool character_has_item(character *c, ITEM_TYPES type)
 {
-    printf("Checking if %s has item %s\n", c->last_name, item_names[type]);
     if (type == COOLANT_CANISTER && c->coolant != NULL) {
         return true;
     }
@@ -212,17 +211,21 @@ ability_output *lambert_ability(map *game_map, character *characters[5], charact
 /**
  * Subtract a use from a character's item and check if it breaks
  * @param c           Character to check
- * @param item_index  Index of item to check
+ * @param i           Pointer to item to check
  */
-void use_item(character *c, int item_index)
+void use_item(character *c, item *i)
 {
-    printf("%s uses %s\n", c->last_name, item_names[c->held_items[item_index]->type]);
+    printf("%s uses %s\n", c->last_name, item_names[i->type]);
 
-    if (c->held_items[item_index]->uses >= 0) {
-        c->held_items[item_index]->uses--;
-        if (c->held_items[item_index]->uses <= 0) {
-            printf("%s's %s broke!\n", c->last_name, item_names[c->held_items[item_index]->type]);
-            c->held_items[item_index] = NULL;
+    if (i->uses >= 0) {
+        i->uses--;
+        if (i->uses <= 0) {
+            printf("%s's %s broke!\n", c->last_name, item_names[i->type]);
+            for (int j = 0; j < 3; j++) {
+                if (c->held_items[j] == i) {
+                    c->held_items[j] = NULL;
+                }
+            }
         }
     }
 }
