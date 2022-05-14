@@ -1021,12 +1021,47 @@ bool use(game_manager *manager)
                     }
                 }
                 break;
-            case GRAPPLE_GUN:
+            case GRAPPLE_GUN:;
+                if (shortest_path(
+                        manager->game_map, manager->xenomorph_location, manager->active_character->current_room)
+                        ->size > 4) {
+                    printf("The Xenomorph is not within 3 spaces.\n");
+                    return false;
+                } else {
+                    room_queue *alien_locations =
+                        find_rooms_by_distance(manager->game_map, manager->xenomorph_location, 3, false);
+
+                    printf("Where to send the Xenomorph to?\n");
+                    for (int i = 0; i < alien_locations->size; i++) {
+                        printf("\t%d) %s\n", i + 1, poll_position(alien_locations, i)->name);
+                    }
+                    printf("\tb) Back\n");
+
+                    char ch = '\0';
+                    while (ch < '1' || ch > '0' + alien_locations->size) {
+                        ch = get_character();
+
+                        if (ch == 'b') {
+                            break;
+                        }
+                    }
+
+                    if (ch == 'b') {
+                        return false;
+                    } else {
+                        ch = ch - '0' - 1;
+                        use_item(manager->active_character, manager->active_character->held_items[ch]);
+                        printf("The Xenomorph retreats to %s!\n", poll_position(alien_locations, ch)->name);
+                        manager->xenomorph_location = poll_position(alien_locations, ch);
+                    }
+
+                    break_loop = true;
+                }
                 break;
             case INCINERATOR:;
-                room_queue *rq = shortest_path(
-                    manager->game_map, manager->xenomorph_location, manager->active_character->current_room);
-                if (rq->size > 4) {
+                if (shortest_path(
+                        manager->game_map, manager->xenomorph_location, manager->active_character->current_room)
+                        ->size > 4) {
                     printf("The Xenomorph is not within 3 spaces.\n");
                     return false;
                 } else {
