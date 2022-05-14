@@ -208,7 +208,7 @@ room *pop_tail(struct room_queue *q)
     }
 
     room *tmp = q->head;
-    while (tmp->room_queue_next != q->tail) {
+    while (tmp->room_queue_next != q->tail && tmp->room_queue_next->room_queue_next != NULL) {
         tmp = tmp->room_queue_next;
     }
     room *out = tmp->room_queue_next;

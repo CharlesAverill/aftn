@@ -62,7 +62,7 @@ void update_objectives(game_manager *manager);
 
 room *character_move(game_manager *manager, struct character *to_move, room_queue *allowed_moves, bool allow_back);
 bool xeno_move(game_manager *manager, int num_spaces, int morale_drop);
-void ash_move(game_manager *manager, int num_spaces);
+bool ash_move(game_manager *manager, int num_spaces);
 
 int reduce_morale(game_manager *manager, int lost, bool encountered_alien);
 int trigger_event(game_manager *manager, struct character *moved, room *motion_tracker_room);

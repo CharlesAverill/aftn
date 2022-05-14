@@ -33,6 +33,10 @@ game_manager *new_game(const arguments args, map *game_map)
 
     // Place initial scrap
     for (int i = 0; i < manager->game_map->scrap_room_count; i++) {
+        if (manager->game_map->scrap_rooms[i] == manager->ash_location) {
+            continue;
+        }
+
         manager->game_map->scrap_rooms[i]->num_scrap = 2;
     }
 
@@ -372,7 +376,7 @@ bool xeno_move(game_manager *manager, int num_spaces, int morale_drop)
 
     // Move xeno along path
     if (s < num_spaces) {
-        manager->xenomorph_location = shortest->tail;
+        manager->xenomorph_location = shortest->head;
     } else if (num_spaces > 0) {
         for (int i = 0; i < num_spaces && shortest->head->room_queue_next != NULL; i++) {
             pop_tail(shortest);
@@ -403,9 +407,97 @@ bool xeno_move(game_manager *manager, int num_spaces, int morale_drop)
  * Move Ash towards the nearest player, stop if he reaches Scrap
  * @param  manager                  Game manager
  * @param  num_spaces               Maximum number of spaces to move Ash
+ * @return          True if Ash intercepted a player, false otherwise
  */
-void ash_move(game_manager *manager, int num_spaces)
+bool ash_move(game_manager *manager, int num_spaces)
 {
+    if (manager->ash_location == NULL) {
+        return false;
+    }
+
+    manager->ash_location->num_scrap = 0;
+
+    // Get shortest path to a character or a room with scrap
+    room_queue *shortest = NULL;
+    int s = INT_MAX;
+    // Scrap check
+    for (int i = 0; i < manager->game_map->room_count; i++) {
+        if (manager->game_map->rooms[i]->num_scrap == 0) {
+            continue;
+        }
+
+        room_queue *rq = shortest_path(manager->game_map, manager->ash_location, manager->game_map->rooms[i]);
+
+        if (rq != NULL && rq->size < s) {
+            if (shortest != NULL) {
+                free(shortest);
+            }
+
+            shortest = rq;
+            s = rq->size;
+        }
+    }
+    // Character check
+    for (int i = 0; i < manager->character_count; i++) {
+        // Ash only moves if nobody is with him
+        if (manager->characters[i]->current_room == manager->ash_location) {
+            if (shortest != NULL) {
+                free(shortest);
+            }
+
+            return false;
+        }
+
+        room_queue *rq = shortest_path(manager->game_map, manager->ash_location, manager->characters[i]->current_room);
+
+        if (rq != NULL && rq->size < s) {
+            if (shortest != NULL) {
+                free(shortest);
+            }
+
+            shortest = rq;
+            s = rq->size;
+        }
+    }
+
+    // Move Ash along path
+    if (s < num_spaces) {
+        manager->ash_location = shortest->head;
+        manager->ash_location->num_scrap = 0;
+
+        ash_move(manager, num_spaces - s);
+    } else if (num_spaces > 0) {
+        for (int i = 0; i < num_spaces && shortest->head->room_queue_next != NULL; i++) {
+            pop_tail(shortest);
+        }
+        manager->ash_location = shortest->tail;
+    }
+
+    manager->ash_location->num_scrap = 0;
+
+    // Check if Ash intercepts characters
+    bool printed_message = false;
+    for (int i = 0; i < manager->character_count; i++) {
+        if (manager->characters[i]->current_room == manager->ash_location) {
+            if (!printed_message) {
+                printed_message = true;
+                printf("Ash meets you in %s!\n", manager->ash_location->name);
+            }
+
+            if (manager->characters[i]->num_scrap > 0) {
+                printf("%s loses 1 Scrap!\n", manager->characters[i]->last_name);
+                manager->characters[i]->num_scrap--;
+            } else {
+                printf("%s has no Scrap!\n", manager->characters[i]->last_name);
+                reduce_morale(manager, 1, false);
+            }
+        }
+    }
+
+    free(shortest);
+
+    return printed_message;
+
     /*
     // Get shortest path to a character
     room_queue *shortest = NULL;
@@ -426,7 +518,7 @@ void ash_move(game_manager *manager, int num_spaces)
 
     // Move xeno along path
     if (s < num_spaces) {
-        manager->xenomorph_location = shortest->tail;
+        manager->xenomorph_location = shortest->head;
     } else if (num_spaces > 0) {
         for (int i = 0; i < num_spaces && shortest->head->room_queue_next != NULL; i++) {
             pop_tail(shortest);
@@ -658,7 +750,12 @@ void trigger_encounter(game_manager *manager)
         room *target_room =
             manager->game_map
                 ->rooms[manager->game_map->named_room_indices[randint(0, manager->game_map->named_room_count - 1)]];
-        printf("[ENCOUNTER] - All is quiet in %s. Alien moves 1 space.\n", target_room->name);
+        printf("[ENCOUNTER] - All is quiet in %s. Xenomorph moves 1 space.", target_room->name);
+        if (manager->ash_location != NULL) {
+            printf(" Ash moves 1 space.\n");
+        } else {
+            printf("\n");
+        }
 
         int scrap_decider = randint(1, 11);
         if (scrap_decider <= 8) {
@@ -672,10 +769,11 @@ void trigger_encounter(game_manager *manager)
         target_room->has_event = true;
 
         xeno_move(manager, 1, 2);
+        ash_move(manager, 1);
 
         break;
     case ALIEN_Lost_The_Signal:
-        printf("[ENCOUNTER] - We lost the signal. Xenomorph has returned to %s\n",
+        printf("[ENCOUNTER] - Lost the Signal - Xenomorph has returned to %s\n",
                manager->game_map->xenomorph_start_room->name);
 
         manager->xenomorph_location = manager->game_map->xenomorph_start_room;
@@ -694,25 +792,42 @@ void trigger_encounter(game_manager *manager)
 
         break;
     case ORDER937_Meet_Me_In_The_Infirmary:
-        printf("[ENCOUNTER] - Ash moves twice, and %s moves to %s\n",
-               manager->active_character->last_name,
-               manager->game_map->ash_start_room->name);
+        if (manager->ash_location != NULL) {
+            printf("[ENCOUNTER] - Meet Me in the Infirmary - Ash moves twice, and %s moves to %s\n",
+                   manager->active_character->last_name,
+                   manager->game_map->ash_start_room->name);
+        } else {
+            printf("[ENCOUNTER] - Meet Me in the Infirmary - %s moves to %s\n",
+                   manager->active_character->last_name,
+                   manager->game_map->ash_start_room->name);
+        }
+
         manager->active_character->current_room = manager->game_map->ash_start_room;
         update_objectives(manager);
         ash_move(manager, 2);
 
         break;
     case ORDER937_Crew_Expendable:
-        printf("[ENCOUNTER] - Crew Expendable - Ash moves twice, and %s loses all Scrap\n",
-               manager->active_character->last_name);
+        if (manager->ash_location != NULL) {
+            printf("[ENCOUNTER] - Crew Expendable - Ash moves twice, and %s loses all Scrap\n",
+                   manager->active_character->last_name);
+        } else {
+            printf("[ENCOUNTER] - Crew Expendable - %s loses all Scrap\n", manager->active_character->last_name);
+        }
+
         replace_order937_cards();
         ash_move(manager, 2);
         manager->active_character->num_scrap = 0;
 
         break;
     case ORDER937_Collating_Data:
-        printf("[ENCOUNTER] - Collating data - Ash moves twice, and each character loses 1 "
-               "Scrap\n");
+        if (manager->ash_location != NULL) {
+            printf("[ENCOUNTER] - Collating Data - Ash moves twice, and each character loses 1 "
+                   "Scrap\n");
+        } else {
+            printf("[ENCOUNTER] - Collating Data - Each character loses 1 Scrap\n");
+        }
+
         for (int i = 0; i < manager->character_count; i++) {
             manager->characters[i]->num_scrap = max(0, manager->characters[i]->num_scrap - 1);
         }
@@ -1342,9 +1457,9 @@ void game_loop(game_manager *manager)
                         break_loop = !is_brett;
 
                         break;
-                    case 'u':
+                    case 'u':;
                         int u = use(manager);
-                        if(u != 0) {
+                        if (u != 0) {
                             break_loop = true;
                             do_encounter &= u == 2;
                         }
