@@ -37,6 +37,8 @@ extern objective objectives_stack[NUM_OBJECTIVES];
 
 objective *get_objectives(int n);
 
+void complete_objective(objective *o);
+
 void print_objective_description(objective o);
 
 #endif

@@ -128,6 +128,67 @@ void print_game_objectives(game_manager *manager)
 }
 
 /**
+ * Check uncleared objectives and clear them if conditions are met
+ * @param manager  Game manager
+ */
+void update_objectives(game_manager *manager)
+{
+    for (int i = 0; i < manager->num_objectives; i++) {
+        if (!manager->game_objectives[i].completed) {
+            switch (manager->game_objectives[i].type) {
+            case BRING_ITEM_TO_LOCATION:
+                for (int j = 0; j < manager->character_count; j++) {
+                    if (manager->characters[j]->current_room == manager->game_objectives[i].location &&
+                        character_has_item(manager->characters[j], manager->game_objectives[i].target_item_type)) {
+                        complete_objective(&(manager->game_objectives[i]));
+                        break;
+                    }
+                }
+                break;
+            case CREW_AT_LOCATION_WITH_MINIMUM_SCRAP:;
+                bool all_at_location_with_scrap = true;
+                for (int j = 0; j < manager->character_count; j++) {
+                    if (manager->characters[j]->current_room != manager->game_objectives[i].location ||
+                        manager->characters[j]->num_scrap < manager->game_objectives[i].minimum_scrap) {
+                        all_at_location_with_scrap = false;
+                    }
+                }
+
+                if (all_at_location_with_scrap) {
+                    complete_objective(&(manager->game_objectives[i]));
+                }
+                break;
+            case DROP_COOLANT:;
+                int coolant_count = 0;
+                for (int j = 0; j < 4; j++) {
+                    if (manager->game_objectives[i].location->room_items[j] != NULL &&
+                        manager->game_objectives[i].location->room_items[j]->type == COOLANT_CANISTER) {
+                        coolant_count++;
+                    }
+                }
+
+                if (coolant_count >= 2) {
+                    complete_objective(&(manager->game_objectives[i]));
+                }
+                break;
+            }
+        }
+    }
+
+    // Check for final mission
+    bool all_complete = true;
+    for (int i = 0; i < manager->num_objectives; i++) {
+        all_complete &= manager->game_objectives[i].completed;
+    }
+
+    if (all_complete) {
+        printf("[OBJECTIVE] - Completed all missions\n");
+        // TODO : Add final mission
+        exit(0);
+    }
+}
+
+/**
  * Move a character
  * @param  manager                     Game manager
  * @param  to_move                     Character to move
@@ -165,9 +226,11 @@ room *character_move(game_manager *manager, struct character *to_move, dfs_resul
 
         int max_destination_index =
             allowed_moves == NULL ? to_move->current_room->connection_count : allowed_moves->num_results;
+
         if (allow_back && ch == 'b') {
             return to_move->current_room;
         } else if (allowed_moves == NULL && ch == 'l') {
+            update_objectives(manager);
             return to_move->current_room->ladder_connection;
         } else if (ch >= '0' && ch <= max_destination_index + '0') {
             if (allowed_moves == NULL) {
@@ -443,6 +506,7 @@ void trigger_encounter(game_manager *manager)
                manager->active_character->last_name,
                manager->game_map->ash_start_room->name);
         manager->active_character->current_room = manager->game_map->ash_start_room;
+        update_objectives(manager);
         ash_move(manager, 2);
 
         break;
@@ -477,6 +541,7 @@ void flee(game_manager *manager, struct character *moved)
 
     dfs_results *allowed_moves = find_rooms_by_distance(manager->game_map, moved->current_room, 3, 0);
     moved->current_room = character_move(manager, moved, allowed_moves, false);
+    update_objectives(manager);
     free(allowed_moves);
 }
 
@@ -818,6 +883,8 @@ void game_loop(game_manager *manager)
                                 do_encounter = false;
                             }
 
+                            update_objectives(manager);
+
                             break_loop = true;
                         }
 
@@ -827,6 +894,7 @@ void game_loop(game_manager *manager)
                         break;
                     case 'd':
                         break_loop = drop(manager);
+                        update_objectives(manager);
                         break;
                     case 'a':
                         if (!used_ability) {
@@ -920,6 +988,8 @@ void game_loop(game_manager *manager)
                             manager->active_character->num_scrap -= item_costs[ch] - cost_reduction;
                             manager->active_character->num_items++;
                         }
+
+                        update_objectives(manager);
 
                         break_loop = true;
 

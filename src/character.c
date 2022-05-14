@@ -60,6 +60,28 @@ character characters[5] = {
      lambert_ability},
 };
 
+/**
+ * Check if a character has a certain item
+ * @param  c               Character to check
+ * @param  type            Type of item to check for
+ * @return      True if `c` has an item of type `type`, false otherwise
+ */
+bool character_has_item(character *c, ITEM_TYPES type)
+{
+    printf("Checking if %s has item %s\n", c->last_name, item_names[type]);
+    if (type == COOLANT_CANISTER && c->coolant != NULL) {
+        return true;
+    }
+
+    for (int i = 0; i < 3; i++) {
+        if (c->held_items[i] != NULL && c->held_items[i]->type == type) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 ability_output *new_ability_output()
 {
     ability_output *out = (ability_output *)malloc(sizeof(ability_output));

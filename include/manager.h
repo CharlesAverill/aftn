@@ -42,6 +42,7 @@ struct game_manager {
 game_manager *new_game(const arguments args, map *game_map);
 
 void print_game_objectives(game_manager *manager);
+void update_objectives(game_manager *manager);
 
 room *character_move(game_manager *manager, struct character *to_move, dfs_results *allowed_moves, bool allow_back);
 bool xeno_move(game_manager *manager, int num_spaces, int morale_drop);

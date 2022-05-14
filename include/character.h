@@ -42,6 +42,8 @@ struct character {
     ability_output *(*ability_function)(map *, character **, character *);
 };
 
+bool character_has_item(character *c, ITEM_TYPES type);
+
 ability_output *ripley_ability(map *game_map, character *characters[5], character *active_character);
 ability_output *dallas_ability(map *game_map, character *characters[5], character *active_character);
 ability_output *parker_ability(map *game_map, character *characters[5], character *active_character);

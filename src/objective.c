@@ -50,9 +50,22 @@ objective *get_objectives(int n)
     return out;
 }
 
+void complete_objective(objective *o)
+{
+    printf("[OBJECTIVE] - Completed objective %s!\n", o->name);
+    o->completed = true;
+}
+
+/**
+ * Print a description of an objective
+ * @param o  Objective to print
+ */
 void print_objective_description(objective o)
 {
     printf("%s: ", o.name);
+    if (o.completed) {
+        printf("[COMPLETED] - ");
+    }
 
     switch (o.type) {
     case BRING_ITEM_TO_LOCATION:
