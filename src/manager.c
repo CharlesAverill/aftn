@@ -52,46 +52,53 @@ game_manager *new_game(const arguments args, map *game_map)
     manager->turn_index = 0;
 
     // Character selection
-    int picked[5] = {-1, -1, -1, -1, -1};
-    for (int i = 0; i < 5; i++) {
-        manager->characters[i] = NULL;
-    }
-    for (int i = 0; i < args.n_characters; i++) {
-        printf("Pick character %d:\n", i + 1);
+    if (args.n_characters == 5) {
+        for (int i = 0; i < 5; i++) {
+            manager->characters[i] = &characters[i];
+            manager->characters[i]->current_room = manager->game_map->player_start_room;
+        }
+    } else {
+        int picked[5] = {-1, -1, -1, -1, -1};
+        for (int i = 0; i < 5; i++) {
+            manager->characters[i] = NULL;
+        }
+        for (int i = 0; i < args.n_characters; i++) {
+            printf("Pick character %d:\n", i + 1);
 
-        for (int j = 0; j < 5; j++) {
-            int already_picked = 0;
-            for (int k = 0; k < 5; k++) {
-                if (picked[k] == j) {
-                    already_picked = 1;
+            for (int j = 0; j < 5; j++) {
+                int already_picked = 0;
+                for (int k = 0; k < 5; k++) {
+                    if (picked[k] == j) {
+                        already_picked = 1;
+                    }
+                }
+                if (already_picked) {
+                    continue;
+                }
+
+                printf("%d) %s, %s - %d Actions - Special Ability: %s\n",
+                       j + 1,
+                       characters[j].last_name,
+                       characters[j].first_name,
+                       characters[j].max_actions,
+                       characters[j].ability_description);
+            }
+            printf("e) Exit\n");
+
+            char ch = 0;
+            while (ch < '0' || ch > '5') {
+                ch = get_character();
+                if (ch == 'e') {
+                    exit(0);
                 }
             }
-            if (already_picked) {
-                continue;
-            }
 
-            printf("%d) %s, %s - %d Actions - Special Ability: %s\n",
-                   j + 1,
-                   characters[j].last_name,
-                   characters[j].first_name,
-                   characters[j].max_actions,
-                   characters[j].ability_description);
+            int selection = ch - '0' - 1;
+            picked[i] = selection;
+            manager->characters[i] = &characters[selection];
+
+            manager->characters[i]->current_room = manager->game_map->player_start_room;
         }
-        printf("e) Exit\n");
-
-        char ch = 0;
-        while (ch < '0' || ch > '5') {
-            ch = get_character();
-            if (ch == 'e') {
-                exit(0);
-            }
-        }
-
-        int selection = ch - '0' - 1;
-        picked[i] = selection;
-        manager->characters[i] = &characters[selection];
-
-        manager->characters[i]->current_room = manager->game_map->player_start_room;
     }
     manager->character_count = args.n_characters;
 
@@ -373,7 +380,7 @@ bool xeno_move(game_manager *manager, int num_spaces, int morale_drop)
                 printf("The Xenomorph meets you in %s!\n", manager->xenomorph_location->name);
             }
 
-            reduce_morale(manager, morale_drop);
+            reduce_morale(manager, morale_drop, true);
             flee(manager, manager->characters[i]);
         }
     }
@@ -394,13 +401,83 @@ void ash_move(game_manager *manager, int num_spaces)
 
 /**
  * Reduce the morale of the team and check for a game over
- * @param manager  Game manager
- * @param lost     Number of morale to lose
+ * @param manager            Game manager
+ * @param lost               Number of morale to lose
+ * @param encountered_alien  True if alien reduced morale else false
+ * @return          Number of morale lost
  */
-void reduce_morale(game_manager *manager, int lost)
+int reduce_morale(game_manager *manager, int lost, bool encountered_alien)
 {
+    // Check for flashlights and electric prods
+    character *char_has_flashlight;
+    bool has_flashlight = false;
+    int flashlight_index;
+    character *char_has_prod;
+    bool has_prod = false;
+    int prod_index;
     for (int i = 0; i < manager->character_count; i++) {
-        // TODO - Check if any character has electric prod to reduce morale deducted
+        for (int j = 0; j < 3; j++) {
+            if (manager->characters[i]->held_items[j] != NULL &&
+                manager->characters[i]->held_items[j]->type == FLASHLIGHT) {
+                char_has_flashlight = manager->characters[i];
+                flashlight_index = j;
+                has_flashlight = true;
+            } else if (encountered_alien && manager->characters[i]->held_items[j] != NULL &&
+                       manager->characters[i]->held_items[j]->type == ELECTRIC_PROD) {
+                char_has_prod = manager->characters[i];
+                prod_index = j;
+                has_prod = true;
+            }
+        }
+    }
+
+    char ch = '\0';
+    if (has_flashlight ^ has_prod) {
+        if (has_flashlight) {
+            printf("%s has a FLASHLIGHT. Use it to reduce morale lost by 1? (y/n) ", char_has_flashlight->last_name);
+
+            while (ch != 'y' && ch != 'n') {
+                ch = get_character();
+            }
+
+            if (ch == 'y') {
+                lost = min(0, lost - 1);
+                use_item(char_has_flashlight, flashlight_index);
+            }
+        } else {
+            printf("%s has an ELECTRIC PROD. Use it to reduce morale lost by 2? (y/n) ", char_has_prod->last_name);
+
+            while (ch != 'y' && ch != 'n') {
+                ch = get_character();
+            }
+
+            if (ch == 'y') {
+                lost = min(0, lost - 2);
+                use_item(char_has_prod, prod_index);
+            }
+        }
+    } else if (has_flashlight && has_prod) {
+        printf("An ELECTRIC PROD and FLASHLIGHT are held by ");
+
+        if (char_has_flashlight == char_has_prod) {
+            printf("%s.", char_has_flashlight->last_name);
+        } else {
+            printf("%s and %s.", char_has_flashlight->last_name, char_has_prod->last_name);
+        }
+
+        printf("\n\t1) Use ELECTRIC PROD\n\t2) Use FLASHLIGHT\n\tb) Do not use item\n");
+
+        while (ch != '1' && ch != '2' && ch != 'b') {
+            ch = get_character();
+        }
+
+        if (ch == '1') {
+            lost = min(0, lost - 2);
+            use_item(char_has_prod, prod_index);
+        } else if (ch == '2') {
+            lost = min(0, lost - 1);
+            use_item(char_has_flashlight, flashlight_index);
+        }
     }
 
     manager->morale -= lost;
@@ -409,6 +486,8 @@ void reduce_morale(game_manager *manager, int lost)
         printf("[GAME OVER] - Morale dropped to 0\n");
         exit(0);
     }
+
+    return lost;
 }
 
 /**
@@ -429,19 +508,27 @@ int trigger_event(game_manager *manager, struct character *moved)
             return 0;
         } else if (event_type <= 10) {
             printf("[EVENT] - Jonesy\n");
-            printf("Jonesy hisses at you! Morale decreases by 1.\n");
+            printf("Jonesy hisses at you!\n");
 
-            reduce_morale(manager, 1);
+            int dropped = reduce_morale(manager, 1, false);
+
+            if (dropped > 0) {
+                printf("Morale decreases by %d.\n", dropped);
+            }
 
             return 1;
         } else {
             printf("[EVENT] - Surprise Attack\n");
             int lost_morale = randint(1, 2);
-            printf("You encounter the Xenomorph! Morale decreases by %d and you must flee 3 spaces.\n", lost_morale);
+            printf("You encounter the Xenomorph!\n");
 
             manager->xenomorph_location = moved->current_room;
 
-            reduce_morale(manager, lost_morale);
+            int dropped = reduce_morale(manager, lost_morale, true);
+
+            if (dropped > 0) {
+                printf("Morale decreases by %d.\n", dropped);
+            }
 
             flee(manager, moved);
 
@@ -639,6 +726,10 @@ bool pickup(game_manager *manager)
                             }
                         }
                         manager->active_character->num_items++;
+
+                        printf("%s picked up the %s\n",
+                               manager->active_character->last_name,
+                               item_names[manager->active_character->current_room->room_items[m]->type]);
 
                         manager->active_character->current_room->num_items--;
                         manager->active_character->current_room->room_items[m] = NULL;
@@ -845,6 +936,7 @@ void game_loop(game_manager *manager)
                                "d - drop\n"
                                "a - ability\n"
                                "i - view inventory\n"
+                               "k - view team info\n"
                                "c - craft\n"
                                "u - use item\n"
                                "t - trade\n"
@@ -924,16 +1016,14 @@ void game_loop(game_manager *manager)
 
                         break;
                     case 'i':
-                        printf("%s's Inventory:\n", manager->active_character->last_name);
-                        printf("\tScrap: %d\n", manager->active_character->num_scrap);
-                        printf("\tItems:\n");
-                        for (int m = 0; m < 3; m++) {
-                            printf("\t\t");
-                            print_item(manager->active_character->held_items[m]);
-                        }
-                        printf("\t\t");
-                        print_item(manager->active_character->coolant);
+                        print_inventory(manager->active_character);
 
+                        break;
+                    case 'k':
+                        printf("Team Morale: %d\n", manager->morale);
+                        for (int m = 0; m < manager->character_count; m++) {
+                            print_inventory(manager->characters[m]);
+                        }
                         break;
                     case 'c':
                         if (manager->active_character->num_scrap == 0) {
@@ -959,7 +1049,7 @@ void game_loop(game_manager *manager)
                             if (cost <= manager->active_character->num_scrap && m != COOLANT_CANISTER) {
                                 craftable_indices[num_craftable++] = m;
                                 printf("\t%d) ", num_craftable);
-                                print_item_type(m, cost_reduction);
+                                print_item_type(m, cost >= 2 ? cost_reduction : 0);
                             }
                         }
                         printf("\tb) Back\n");
@@ -991,7 +1081,7 @@ void game_loop(game_manager *manager)
 
                         update_objectives(manager);
 
-                        break_loop = true;
+                        break_loop = !is_brett;
 
                         break;
                     case 'u':

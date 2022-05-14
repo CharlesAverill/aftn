@@ -208,3 +208,38 @@ ability_output *lambert_ability(map *game_map, character *characters[5], charact
 
     return out;
 }
+
+/**
+ * Subtract a use from a character's item and check if it breaks
+ * @param c           Character to check
+ * @param item_index  Index of item to check
+ */
+void use_item(character *c, int item_index)
+{
+    printf("%s uses %s\n", c->last_name, item_names[c->held_items[item_index]->type]);
+
+    if (c->held_items[item_index]->uses >= 0) {
+        c->held_items[item_index]->uses--;
+        if (c->held_items[item_index]->uses <= 0) {
+            printf("%s's %s broke!\n", c->last_name, item_names[c->held_items[item_index]->type]);
+            c->held_items[item_index] = NULL;
+        }
+    }
+}
+
+/**
+ * Print the inventory of the provided character
+ * @param c  Character whose inventory will be printed
+ */
+void print_inventory(character *c)
+{
+    printf("%s's Inventory:\n", c->last_name);
+    printf("\tScrap: %d\n", c->num_scrap);
+    printf("\tItems:\n");
+    for (int m = 0; m < 3; m++) {
+        printf("\t\t");
+        print_item(c->held_items[m]);
+    }
+    printf("\t\t");
+    print_item(c->coolant);
+}

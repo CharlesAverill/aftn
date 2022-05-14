@@ -19,6 +19,8 @@ char *item_names[NUM_ITEM_TYPES] = {
     "COOLANT CANISTER",
 };
 
+bool item_uses_actions[NUM_ITEM_TYPES] = {false, true, true, true, false, false};
+
 int item_uses[NUM_ITEM_TYPES] = {-1, -1, 2, 2, 2, 1, 1};
 
 /**

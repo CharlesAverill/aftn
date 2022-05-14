@@ -54,4 +54,8 @@ extern character characters[5];
 
 ability_output *new_ability_output();
 
+void use_item(character *c, int item_index);
+
+void print_inventory(character *c);
+
 #endif

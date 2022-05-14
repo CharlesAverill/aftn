@@ -8,6 +8,7 @@
 #ifndef ITEM_H
 #define ITEM_H
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -29,6 +30,7 @@ extern int item_uses[NUM_ITEM_TYPES];
 
 typedef struct item {
     ITEM_TYPES type;
+    bool uses_action;
     int uses;
 } item;
 

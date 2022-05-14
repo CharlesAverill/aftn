@@ -48,7 +48,7 @@ room *character_move(game_manager *manager, struct character *to_move, dfs_resul
 bool xeno_move(game_manager *manager, int num_spaces, int morale_drop);
 void ash_move(game_manager *manager, int num_spaces);
 
-void reduce_morale(game_manager *manager, int lost);
+int reduce_morale(game_manager *manager, int lost, bool encountered_alien);
 int trigger_event(game_manager *manager, struct character *moved);
 void trigger_encounter(game_manager *manager);
 void flee(game_manager *manager, struct character *moved);
