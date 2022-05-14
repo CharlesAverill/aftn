@@ -5,6 +5,22 @@ Following the name or ID, semicolon-separated room names and corridor IDs denote
 and corridors. A room can have at most 8 connections and one ladder connection. To denote a ladder
 connection, start the connection with a "%". Only one ladder definition is required.
 
+It is encouraged that room names stay the same to ensure functionality of certain objectives,
+among other things. The standard room names are:
+    MU-TH-UR
+    BRIDGE
+    GALLEY
+    SUIT STORAGE
+    DOCKING BAY
+    HYPERSLEEP
+    AIRLOCK
+    MED BAY
+    MAINTENANCE BAY
+    EQUIPMENT STORAGE
+    GARAGE
+    WORKSHOP
+    NEST
+
 Each line of the input file may be up to 255 characters long.
 
 A given map may have a total of 64 rooms and corridors.

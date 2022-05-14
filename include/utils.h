@@ -31,18 +31,19 @@ int min(int a, int b);
 char get_character();
 
 // Used for Xeno and Ash trajectory planning
-struct room_queue {
+typedef struct room_queue {
     int size;
     int max_size;
     room *head;
     room *tail;
-};
+} room_queue;
 
-struct room_queue *new_room_queue(int capacity);
-void print_queue(struct room_queue *q);
-int push(struct room_queue *q, room *node);
-room *pop(struct room_queue *q);
-room *pop_tail(struct room_queue *q);
-bool queue_contains(struct room_queue *q, room *target);
+room_queue *new_room_queue(int capacity);
+void print_queue(room_queue *q);
+int push(room_queue *q, room *node);
+room *pop(room_queue *q);
+room *pop_tail(room_queue *q);
+room *poll_position(room_queue *q, int i);
+bool queue_contains(room_queue *q, room *target);
 
 #endif

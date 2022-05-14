@@ -19,6 +19,15 @@ char *item_names[NUM_ITEM_TYPES] = {
     "COOLANT CANISTER",
 };
 
+char *item_desc[NUM_ITEM_TYPES] = {
+    "If Morale is lost, reduce the loss byu 2. May be used when it's not your turn. Doesn't stack.",
+    "Reveal an Event up to two spaces away.",
+    "If the Xenomorph is within three spaces of you, move it up to three spaces in any direction.",
+    "If the Xenomorph is within three spaces of you, send it back to the nest.",
+    "If the Xenomorph is encountered, reduce Morale lost by 2. May be used when it's not your turn.",
+    "If you are surprised by Jonesy, capture him in this for the rest of the game.",
+    "May be converted to 2 scrap at WORKSHOP"};
+
 bool item_uses_actions[NUM_ITEM_TYPES] = {false, true, true, true, false, false};
 
 int item_uses[NUM_ITEM_TYPES] = {-1, -1, 2, 2, 2, 1, 1};
@@ -34,10 +43,11 @@ void print_item(item *i)
     } else {
         printf("%s:", item_names[i->type]);
         if (i->uses >= 0) {
-            printf(" %d uses\n", i->uses);
+            printf(" %d uses - ", i->uses);
         } else {
-            printf(" inf uses\n");
+            printf(" inf uses - ");
         }
+        printf("%s\n", item_desc[i->type]);
     }
 }
 

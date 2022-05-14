@@ -220,6 +220,29 @@ room *pop_tail(struct room_queue *q)
 }
 
 /**
+ * Get the room in q at position i without popping
+ * @param  q               Queue to look in
+ * @param  i               Index to look at
+ * @return   Room if i < size else exit
+ */
+room *poll_position(room_queue *q, int i)
+{
+    if (i >= q->size) {
+        fprintf(stderr, "poll_position caused out-of-bounds access\n");
+        exit(1);
+    }
+
+    room *tmp = q->head;
+    int index = 0;
+    while (index != i) {
+        tmp = tmp->room_queue_next;
+        index++;
+    }
+
+    return tmp;
+}
+
+/**
  * Check if a room_queue contains `target`
  * @param  q                    Queue to check
  * @param  target               Room to look for

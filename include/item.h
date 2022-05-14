@@ -27,6 +27,7 @@ typedef enum {
 
 extern int item_costs[NUM_ITEM_TYPES];
 extern char *item_names[NUM_ITEM_TYPES];
+extern char *item_desc[NUM_ITEM_TYPES];
 extern int item_uses[NUM_ITEM_TYPES];
 
 // Structure for holding item data

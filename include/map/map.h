@@ -8,6 +8,7 @@
 #ifndef MAP_H
 #define MAP_H
 
+#include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -55,22 +56,12 @@ typedef struct map {
     char *ascii_map;
 } map;
 
-// A list of rooms returned by DFSs
-// TODO : This is a clone of room_queue, move room_queue here and replace this
-typedef struct dfs_results {
-    // The rooms found by the DFS
-    room *rooms[64];
-    // The number of rooms found by the DFS
-    int num_results;
-} dfs_results;
-
 room *get_room(map *game_map, const char *room_name);
 int get_room_index(map *game_map, const char *room_name);
 room *add_room_if_not_exists(map *game_map, char *room_name);
 
-dfs_results *new_dfs_results();
 void reset_search(map *game_map, int distance);
-dfs_results *find_rooms_by_distance(map *game_map, room *start_room, int distance, bool inclusive);
+room_queue *find_rooms_by_distance(map *game_map, room *start_room, int distance, bool inclusive);
 
 map *read_map(const char *fn);
 void print_map(const map *game_map);

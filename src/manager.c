@@ -85,8 +85,8 @@ game_manager *new_game(const arguments args, map *game_map)
             }
             printf("e) Exit\n");
 
-            char ch = 0;
-            while (ch < '0' || ch > '5') {
+            char ch = '\0';
+            while (ch < '1' || ch > '5') {
                 ch = get_character();
                 if (ch == 'e') {
                     exit(0);
@@ -208,11 +208,11 @@ void update_objectives(game_manager *manager)
  * Move a character
  * @param  manager                     Game manager
  * @param  to_move                     Character to move
- * @param  allowed_moves               dfs_results containing allowed destinations
+ * @param  allowed_moves               room_queue containing allowed destinations
  * @param  allow_back                  Whether or not to allow the user to exit the movement menu
  * @return               Pointer to the room the player moved the character to
  */
-room *character_move(game_manager *manager, struct character *to_move, dfs_results *allowed_moves, bool allow_back)
+room *character_move(game_manager *manager, struct character *to_move, room_queue *allowed_moves, bool allow_back)
 {
     // Get selection
     char ch = '\0';
@@ -229,8 +229,8 @@ room *character_move(game_manager *manager, struct character *to_move, dfs_resul
             }
         } else {
             // Move to rooms defined in allowed_moves
-            for (int i = 0; i < allowed_moves->num_results; i++) {
-                printf("\t%d) %s\n", i + 1, allowed_moves->rooms[i]->name);
+            for (int i = 0; i < allowed_moves->size; i++) {
+                printf("\t%d) %s\n", i + 1, poll_position(allowed_moves, i)->name);
             }
         }
         if (allow_back) {
@@ -241,7 +241,7 @@ room *character_move(game_manager *manager, struct character *to_move, dfs_resul
         ch = get_character();
 
         int max_destination_index =
-            allowed_moves == NULL ? to_move->current_room->connection_count : allowed_moves->num_results;
+            allowed_moves == NULL ? to_move->current_room->connection_count : allowed_moves->size;
 
         if (allow_back && ch == 'b') {
             return to_move->current_room;
@@ -252,7 +252,7 @@ room *character_move(game_manager *manager, struct character *to_move, dfs_resul
             if (allowed_moves == NULL) {
                 return to_move->current_room->connections[ch - '0' - 1];
             } else {
-                return allowed_moves->rooms[ch - '0' - 1];
+                return poll_position(allowed_moves, ch - '0' - 1);
             }
         }
     }
@@ -267,7 +267,7 @@ room *character_move(game_manager *manager, struct character *to_move, dfs_resul
  * @param  target                 Target room
  * @return          A room queue containing the path [target ... source]
  */
-struct room_queue *shortest_path(map *game_map, room *source, room *target)
+room_queue *shortest_path(map *game_map, room *source, room *target)
 {
     // Set all to unvisited and distance to inf
     reset_search(game_map, INT_MAX);
@@ -275,7 +275,7 @@ struct room_queue *shortest_path(map *game_map, room *source, room *target)
     source->search_distance = 0;
 
     // Create queue of rooms
-    struct room_queue *rq = new_room_queue(64);
+    room_queue *rq = new_room_queue(64);
     for (int i = 0; i < game_map->room_count; i++) {
         push(rq, game_map->rooms[i]);
     }
@@ -294,7 +294,7 @@ struct room_queue *shortest_path(map *game_map, room *source, room *target)
         }
 
         if (min_node == target) {
-            struct room_queue *shortest_path = new_room_queue(64);
+            room_queue *shortest_path = new_room_queue(64);
             if (min_node->search_previous_room != NULL || min_node == source) {
                 while (min_node != NULL) {
                     push(shortest_path, min_node);
@@ -354,10 +354,10 @@ struct room_queue *shortest_path(map *game_map, room *source, room *target)
 bool xeno_move(game_manager *manager, int num_spaces, int morale_drop)
 {
     // Get shortest path to a character
-    struct room_queue *shortest = NULL;
+    room_queue *shortest = NULL;
     int s = INT_MAX;
     for (int i = 0; i < manager->character_count; i++) {
-        struct room_queue *rq =
+        room_queue *rq =
             shortest_path(manager->game_map, manager->xenomorph_location, manager->characters[i]->current_room);
 
         if (rq != NULL && rq->size < s) {
@@ -504,29 +504,44 @@ int reduce_morale(game_manager *manager, int lost, bool encountered_alien)
  * Check for and trigger any events in the new location of the character `moved`
  * @param  manager               Game manager
  * @param  moved                 Character that was just moved
+ * @param  using_motion_tracker  Whether or not the event is being triggered with a motion tracker
  * @return         0 if Safe event, 1 if Jonesy event, 2 if Xenomorph event, -1 if no event
  */
-int trigger_event(game_manager *manager, struct character *moved)
+int trigger_event(game_manager *manager, struct character *moved, room *motion_tracker_room)
 {
-    if (moved->current_room->has_event) {
+    bool is_motion_tracker = motion_tracker_room != NULL;
+    room *target_room = is_motion_tracker ? motion_tracker_room : moved->current_room;
+    if (target_room->has_event) {
         int event_type = randint(1, 12);
-        event_type = 9;
-        moved->current_room->has_event = false;
+        event_type = 12;
+        target_room->has_event = false;
 
         if (event_type <= 8) {
-            printf("[EVENT] - Safe\n");
+            if (is_motion_tracker) {
+                printf("All seems quiet...\n");
+            } else {
+                printf("[EVENT] - Safe\n");
+            }
 
             return 0;
         } else if (event_type <= 10) {
             if (manager->jonesy_caught) {
-                printf("[EVENT] - Safe\n");
+                if (is_motion_tracker) {
+                    printf("All seems quiet...\n");
+                } else {
+                    printf("[EVENT] - Safe\n");
+                }
 
                 return 0;
             } else {
-                printf("[EVENT] - Jonesy\n");
-                printf("Jonesy hisses at you!\n");
+                if (is_motion_tracker) {
+                    printf("Something tiny makes a blip. Probably Jonesy.\n");
+                } else {
+                    printf("[EVENT] - Jonesy\n");
+                    printf("Jonesy hisses at you!\n");
+                }
 
-                for (int i = 0; i < 3; i++) {
+                for (int i = 0; !is_motion_tracker && i < 3; i++) {
                     if (moved->held_items[i] != NULL && moved->held_items[i]->type == CAT_CARRIER) {
                         printf("%s has a CAT CARRIER - use it to catch Jonesy? (y/n) ", moved->last_name);
 
@@ -544,7 +559,7 @@ int trigger_event(game_manager *manager, struct character *moved)
                     }
                 }
 
-                if (!manager->jonesy_caught) {
+                if (!is_motion_tracker && !manager->jonesy_caught) {
                     int dropped = reduce_morale(manager, 1, false);
 
                     if (dropped > 0) {
@@ -555,19 +570,27 @@ int trigger_event(game_manager *manager, struct character *moved)
 
             return 1;
         } else {
-            printf("[EVENT] - Surprise Attack\n");
-            int lost_morale = randint(1, 2);
-            printf("You encounter the Xenomorph!\n");
+            if (is_motion_tracker) {
+                printf("Something huge, and fast. Must be the Xenomorph.\n");
 
-            manager->xenomorph_location = moved->current_room;
+                manager->xenomorph_location = target_room;
 
-            int dropped = reduce_morale(manager, lost_morale, true);
+                xeno_move(manager, 0, 2);
+            } else {
+                printf("[EVENT] - Surprise Attack\n");
+                int lost_morale = randint(1, 2);
+                printf("You encounter the Xenomorph!\n");
 
-            if (dropped > 0) {
-                printf("Morale decreases by %d.\n", dropped);
+                manager->xenomorph_location = target_room;
+
+                int dropped = reduce_morale(manager, lost_morale, true);
+
+                if (dropped > 0) {
+                    printf("Morale decreases by %d.\n", dropped);
+                }
+
+                flee(manager, moved);
             }
-
-            flee(manager, moved);
 
             return 2;
         }
@@ -663,7 +686,7 @@ void flee(game_manager *manager, struct character *moved)
 {
     printf("%s must flee 3 spaces:\n", moved->last_name);
 
-    dfs_results *allowed_moves = find_rooms_by_distance(manager->game_map, moved->current_room, 3, 0);
+    room_queue *allowed_moves = find_rooms_by_distance(manager->game_map, moved->current_room, 3, false);
     moved->current_room = character_move(manager, moved, allowed_moves, false);
     update_objectives(manager);
     free(allowed_moves);
@@ -708,7 +731,7 @@ bool pickup(game_manager *manager)
 
         // Read input
         char ch = '\0';
-        while (ch < '0' || ch > '0' + option_index) {
+        while (ch < '1' || ch > '0' + option_index) {
             ch = get_character();
 
             if (ch == 'b') {
@@ -830,7 +853,7 @@ bool drop(game_manager *manager)
 
         // Read input
         char ch = '\0';
-        while (ch < '0' || ch > '0' + option_index) {
+        while (ch < '1' || ch > '0' + option_index) {
             ch = get_character();
 
             if (ch == 'b') {
@@ -912,6 +935,105 @@ bool drop(game_manager *manager)
 }
 
 /**
+ * Use item handler
+ * @param  manager               Game manager
+ * @return         False if break_loop is false, else true
+ */
+bool use(game_manager *manager)
+{
+    bool break_loop = false;
+
+    int usable_indices[3];
+    int num_usable = 0;
+    for (int i = 0; i < 3; i++) {
+        if (manager->active_character->held_items[i] != NULL && manager->active_character->held_items[i]->uses_action) {
+            usable_indices[num_usable++] = i;
+        }
+    }
+
+    if (num_usable == 0) {
+        printf("%s has no items that can be used.\n", manager->active_character->last_name);
+        return false;
+    } else {
+        printf("Use options:\n");
+
+        for (int i = 0; i < num_usable; i++) {
+            printf("\t%d) ", i + 1);
+            print_item(manager->active_character->held_items[usable_indices[i]]);
+        }
+        printf("\tb) Back\n");
+
+        char ch = '\0';
+        while (ch < '1' || ch > '0' + num_usable) {
+            ch = get_character();
+
+            if (ch == 'b') {
+                break;
+            }
+        }
+
+        if (ch == 'b') {
+            return false;
+        } else {
+            ch = ch - '0' - 1;
+
+            ITEM_TYPES item_type = manager->active_character->held_items[ch]->type;
+            use_item(manager->active_character, manager->active_character->held_items[ch]);
+
+            switch (item_type) {
+            case MOTION_TRACKER:;
+                room_queue *within_2 =
+                    find_rooms_by_distance(manager->game_map, manager->active_character->current_room, 2, true);
+
+                int event_rooms[64];
+                int num_event_rooms = 0;
+                for (int i = 0; i < within_2->size; i++) {
+                    if (poll_position(within_2, i) != manager->active_character->current_room &&
+                        poll_position(within_2, i)->has_event) {
+                        event_rooms[num_event_rooms++] = i;
+                    }
+                }
+
+                if (num_event_rooms == 0) {
+                    printf("There are no rooms with events nearby.\n");
+                } else {
+                    printf("Choose a room to check events:\n");
+                    for (int i = 0; i < num_event_rooms; i++) {
+                        printf("\t%d) %s\n", i + 1, poll_position(within_2, event_rooms[i])->name);
+                    }
+                    printf("\tb) Back\n");
+
+                    char ch = '\0';
+                    while (ch < '1' || ch > '0' + num_event_rooms) {
+                        ch = get_character();
+
+                        if (ch == 'b') {
+                            break;
+                        }
+                    }
+
+                    if (ch == 'b') {
+                        return false;
+                    } else {
+                        ch = ch - '0' - 1;
+                        trigger_event(manager, manager->active_character, poll_position(within_2, event_rooms[ch]));
+
+                        break_loop = true;
+                    }
+                }
+                break;
+            case GRAPPLE_GUN:
+                break;
+            case INCINERATOR:
+                break;
+            }
+        }
+    }
+
+    return break_loop;
+}
+
+/**
  * Main game loop, handles player input and game logic
  * @param manager  Game manager
  */
@@ -943,7 +1065,8 @@ void game_loop(game_manager *manager)
             manager->turn_index = i;
 
             manager->active_character = manager->characters[manager->turn_index];
-            printf("-----Turn %d: %s------\n", manager->turn_index + 1, manager->active_character->last_name);
+            character *active = manager->active_character;
+            printf("-----Turn %d: %s------\n", manager->turn_index + 1, active->last_name);
 
             // Some abilities can only be used once per turn
             bool used_ability = false;
@@ -951,15 +1074,13 @@ void game_loop(game_manager *manager)
             printf("h - view help menu\n");
 
             bool do_encounter = true;
-            for (int j = manager->active_character->max_actions; j > 0; j--) {
-                manager->active_character->current_actions = j;
+            for (int j = active->max_actions; j > 0; j--) {
+                active->current_actions = j;
 
-                char ch;
+                char ch = '\0';
                 while (1) {
 
-                    printf("Actions - %d/%d\n",
-                           manager->active_character->current_actions,
-                           manager->active_character->max_actions);
+                    printf("Actions - %d/%d\n", active->current_actions, active->max_actions);
 
                     ch = get_character();
 
@@ -977,6 +1098,7 @@ void game_loop(game_manager *manager)
                                "c - craft\n"
                                "u - use item\n"
                                "t - trade\n"
+                               "s - end turn early\n"
                                "v - view current room\n"
                                "l - character locations\n"
                                "o - print game objectives\n"
@@ -986,21 +1108,20 @@ void game_loop(game_manager *manager)
 
                         break;
                     case 'm':; // Start case with assignment
-                        room *last_room = manager->active_character->current_room;
-                        manager->active_character->current_room =
-                            character_move(manager, manager->active_character, NULL, true);
-                        if (manager->active_character->current_room == last_room) {
+                        room *last_room = active->current_room;
+                        active->current_room = character_move(manager, active, NULL, true);
+                        if (active->current_room == last_room) {
                             // Move canceled
                             printf("Canceled move\n");
                         } else {
                             // Move successful
                             printf("Moved %s from %s to %s\n",
-                                   manager->active_character->last_name,
+                                   active->last_name,
                                    last_room->name,
-                                   manager->active_character->current_room->name);
+                                   active->current_room->name);
 
                             // Check for events in new location
-                            if (trigger_event(manager, manager->active_character) == 2) { // Alien encounter
+                            if (trigger_event(manager, active, NULL) == 2) { // Alien encounter
                                 // Immediately end turn and don't do an encounter
                                 j = 0;
                                 do_encounter = false;
@@ -1027,11 +1148,9 @@ void game_loop(game_manager *manager)
                         break;
                     case 'a':
                         if (!used_ability) {
-                            printf("Using %s's ability: %s\n",
-                                   manager->active_character->last_name,
-                                   manager->active_character->ability_description);
-                            ability_output *ao = manager->active_character->ability_function(
-                                manager->game_map, manager->characters, manager->active_character);
+                            printf("Using %s's ability: %s\n", active->last_name, active->ability_description);
+                            ability_output *ao =
+                                active->ability_function(manager->game_map, manager->characters, active);
 
                             break_loop = ao->use_action;
                             used_ability = !ao->can_use_ability_again;
@@ -1053,7 +1172,7 @@ void game_loop(game_manager *manager)
 
                         break;
                     case 'i':
-                        print_inventory(manager->active_character);
+                        print_inventory(active);
 
                         break;
                     case 'k':
@@ -1063,15 +1182,19 @@ void game_loop(game_manager *manager)
                         }
                         break;
                     case 'c':
-                        if (manager->active_character->num_scrap == 0) {
-                            printf("%s has no Scrap\n", manager->active_character->last_name);
+                        if (active->num_scrap == 0) {
+                            printf("%s has no Scrap\n", active->last_name);
+
+                            break;
+                        } else if (active->num_items == 3) {
+                            printf("%s already has 3 items\n", active->last_name);
 
                             break;
                         }
 
                         printf("Craft Options:\n");
 
-                        bool is_brett = manager->active_character->ability_function == brett_ability;
+                        bool is_brett = active->ability_function == brett_ability;
 
                         int cost_reduction = is_brett ? 1 : 0;
                         int num_craftable = 0;
@@ -1083,7 +1206,7 @@ void game_loop(game_manager *manager)
                                 cost -= cost_reduction;
                             }
 
-                            if (cost <= manager->active_character->num_scrap && m != COOLANT_CANISTER) {
+                            if (cost <= active->num_scrap && m != COOLANT_CANISTER) {
                                 craftable_indices[num_craftable++] = m;
                                 printf("\t%d) ", num_craftable);
                                 print_item_type(m, cost >= 2 ? cost_reduction : 0);
@@ -1092,7 +1215,7 @@ void game_loop(game_manager *manager)
                         printf("\tb) Back\n");
 
                         char ch = '\0';
-                        while (ch < '0' || ch > '0' + num_craftable) {
+                        while (ch < '1' || ch > '0' + num_craftable) {
                             ch = get_character();
 
                             if (ch == 'b') {
@@ -1106,14 +1229,14 @@ void game_loop(game_manager *manager)
                             ch = ch - '0' - 1;
                             ch = craftable_indices[ch];
                             for (int n = 0; n < 3; n++) {
-                                if (manager->active_character->held_items[n] == NULL) {
-                                    manager->active_character->held_items[n] = new_item(ch);
+                                if (active->held_items[n] == NULL) {
+                                    active->held_items[n] = new_item(ch);
                                     break;
                                 }
                             }
-                            printf("%s crafted %s\n", manager->active_character->last_name, item_names[ch]);
-                            manager->active_character->num_scrap -= item_costs[ch] - cost_reduction;
-                            manager->active_character->num_items++;
+                            printf("%s crafted %s\n", active->last_name, item_names[ch]);
+                            active->num_scrap -= item_costs[ch] - cost_reduction;
+                            active->num_items++;
                         }
 
                         update_objectives(manager);
@@ -1122,9 +1245,7 @@ void game_loop(game_manager *manager)
 
                         break;
                     case 'u':
-                        printf("Use item\n");
-
-                        break_loop = true;
+                        break_loop = use(manager);
 
                         break;
                     case 't':
@@ -1133,8 +1254,14 @@ void game_loop(game_manager *manager)
                         break_loop = true;
 
                         break;
+                    case 's':
+                        printf("%s's turn ends\n", active->last_name);
+                        j = 0;
+                        break_loop = true;
+
+                        break;
                     case 'v':
-                        print_room(manager->active_character->current_room, 1);
+                        print_room(active->current_room, 1);
 
                         break;
                     case 'l':
