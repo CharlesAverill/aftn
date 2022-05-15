@@ -212,7 +212,7 @@ void update_objectives(game_manager *manager)
                 manager->final_mission_type = randint(0, NUM_FINAL_MISSIONS - 1);
             } while (manager->character_count == 1 && (manager->final_mission_type == CUT_OFF_EVERY_BULKHEAD_AND_VENT ||
                                                        manager->final_mission_type == BLOW_IT_OUT_INTO_SPACE));
-            manager->final_mission_type = ESCAPE_ON_THE_NARCISSUS;
+            manager->final_mission_type = WERE_GOING_TO_BLOW_UP_THE_SHIP;
             setup_final_mission(manager);
         }
     } else {
@@ -355,7 +355,7 @@ void update_final_mission(game_manager *manager)
         }
 
         for (int i = 0; i < manager->character_count; i++) {
-            if (manager->characters[i]->num_scrap == 0 || manager->characters[i]->coolant == NULL) {
+            if (manager->characters[i]->current_room != airlock || manager->characters[i]->num_scrap == 0 || manager->characters[i]->coolant == NULL) {
                 game_won = false;
             }
         }
