@@ -111,7 +111,7 @@ game_manager *new_game(const arguments args, map *game_map)
 
     // Get objectives
     manager->num_objectives = manager->character_count + 1;
-    manager->num_objectives = 1;
+    //manager->num_objectives = 1;
     manager->game_objectives = get_objectives(manager->num_objectives);
     for (int i = 0; i < manager->num_objectives; i++) {
         room *tmp = get_room(manager->game_map, manager->game_objectives[i].location_name);
@@ -212,7 +212,7 @@ void update_objectives(game_manager *manager)
                 manager->final_mission_type = randint(0, NUM_FINAL_MISSIONS - 1);
             } while (manager->character_count == 1 && (manager->final_mission_type == CUT_OFF_EVERY_BULKHEAD_AND_VENT ||
                                                        manager->final_mission_type == BLOW_IT_OUT_INTO_SPACE));
-            manager->final_mission_type = WERE_GOING_TO_BLOW_UP_THE_SHIP;
+            //manager->final_mission_type = WERE_GOING_TO_BLOW_UP_THE_SHIP;
             setup_final_mission(manager);
         }
     } else {
