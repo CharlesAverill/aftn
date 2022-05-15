@@ -212,7 +212,7 @@ void update_objectives(game_manager *manager)
                 manager->final_mission_type = randint(0, NUM_FINAL_MISSIONS - 1);
             } while (manager->character_count == 1 && (manager->final_mission_type == CUT_OFF_EVERY_BULKHEAD_AND_VENT ||
                                                        manager->final_mission_type == BLOW_IT_OUT_INTO_SPACE));
-            manager->final_mission_type = YOU_HAVE_MY_SYMPATHIES;
+            manager->final_mission_type = ESCAPE_ON_THE_NARCISSUS;
             setup_final_mission(manager);
         }
     } else {
@@ -295,12 +295,50 @@ void setup_final_mission(game_manager *manager)
  */
 void update_final_mission(game_manager *manager)
 {
+    if (!manager->is_final_mission) {
+        return;
+    }
+
     bool game_won = false;
 
     switch (manager->final_mission_type) {
     case YOU_HAVE_MY_SYMPATHIES:
         break;
-    case ESCAPE_ON_THE_NARCISSUS:
+    case ESCAPE_ON_THE_NARCISSUS:;
+        // Win when all members in docking bay with 1 coolant dropped in docking bay each, with cat carrier and incinerator in inventory
+        room *docking_bay = get_room(manager->game_map, "DOCKING BAY");
+        if (docking_bay == NULL) {
+            docking_bay = manager->game_map->player_start_room;
+        }
+
+        // Check coolant
+        int num_canisters = 0;
+        for (int i = 0; i < NUM_ROOM_ITEMS; i++) {
+            if (docking_bay->room_items[i] != NULL && docking_bay->room_items[i]->type == COOLANT_CANISTER) {
+                num_canisters++;
+            }
+        }
+        bool enough_dropped_canisters = num_canisters >= manager->character_count;
+
+        // Check inventory and location
+        bool all_in_docking_bay = true;
+        bool has_carrier = false;
+        bool has_incinerator = false;
+        for (int i = 0; i < manager->character_count; i++) {
+            if (manager->characters[i]->current_room != docking_bay) {
+                all_in_docking_bay = false;
+            }
+            if (character_has_item(manager->characters[i], CAT_CARRIER)) {
+                has_carrier = true;
+            }
+            if (character_has_item(manager->characters[i], INCINERATOR)) {
+                has_incinerator = true;
+            }
+        }
+
+        if (enough_dropped_canisters && has_carrier && has_incinerator && all_in_docking_bay) {
+            win_game(manager);
+        }
         break;
     case BLOW_IT_OUT_INTO_SPACE:
         // Win if alien is in or adjacent to DOCKING BAY, a crew member is at AIRLOCK and another at BRIDGE,
@@ -403,40 +441,6 @@ room *character_move(game_manager *manager, struct character *to_move, room_queu
 
     // Check Escape on the Narcissus final mission
     if (manager->is_final_mission && manager->final_mission_type == ESCAPE_ON_THE_NARCISSUS) {
-        // Win when all members in docking bay with 1 coolant dropped in docking bay each, with cat carrier and incinerator in inventory
-        room *docking_bay = get_room(manager->game_map, "DOCKING_BAY");
-        if (docking_bay == NULL) {
-            docking_bay = manager->game_map->player_start_room;
-        }
-
-        // Check coolant
-        int num_canisters = 0;
-        for (int i = 0; i < NUM_ROOM_ITEMS; i++) {
-            if (docking_bay->room_items[i] != NULL && docking_bay->room_items[i]->type == COOLANT_CANISTER) {
-                num_canisters++;
-            }
-        }
-        bool enough_dropped_canisters = num_canisters >= manager->character_count;
-
-        // Check inventory and location
-        bool all_in_docking_bay = true;
-        bool has_carrier = false;
-        bool has_incinerator = false;
-        for (int i = 0; i < manager->character_count; i++) {
-            if (manager->characters[i]->current_room != docking_bay) {
-                all_in_docking_bay = false;
-                break;
-            }
-            if (character_has_item(manager->characters[i], CAT_CARRIER)) {
-                has_carrier = true;
-            }
-            if (character_has_item(manager->characters[i], INCINERATOR)) {
-                has_incinerator = true;
-            }
-        }
-        if (enough_dropped_canisters && has_carrier && has_incinerator && all_in_docking_bay) {
-            win_game(manager);
-        }
     }
 
     return NULL;
@@ -1615,6 +1619,7 @@ void game_loop(game_manager *manager)
                             ash_move(manager, 0);
 
                             update_objectives(manager);
+                            update_final_mission(manager);
 
                             break_loop = true;
                         }
@@ -1626,6 +1631,7 @@ void game_loop(game_manager *manager)
                     case 'd':
                         break_loop = drop(manager);
                         update_objectives(manager);
+                        update_final_mission(manager);
                         break;
                     case 'a':
                         if (!used_ability) {
@@ -1722,6 +1728,7 @@ void game_loop(game_manager *manager)
                         }
 
                         update_objectives(manager);
+                        update_final_mission(manager);
 
                         break_loop = !is_brett;
 
