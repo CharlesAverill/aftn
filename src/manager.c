@@ -111,6 +111,7 @@ game_manager *new_game(const arguments args, map *game_map)
 
     // Get objectives
     manager->num_objectives = manager->character_count + 1;
+    manager->num_objectives = 1;
     manager->game_objectives = get_objectives(manager->num_objectives);
     for (int i = 0; i < manager->num_objectives; i++) {
         room *tmp = get_room(manager->game_map, manager->game_objectives[i].location_name);
@@ -205,9 +206,13 @@ void update_objectives(game_manager *manager)
         }
 
         if (all_complete) {
-            printf("[OBJECTIVE] - Completed all missions\n");
+            printf("[OBJECTIVE] - Completed all objectives\n");
             manager->is_final_mission = true;
-            manager->final_mission_type = randint(0, NUM_FINAL_MISSIONS - 1);
+            do {
+                manager->final_mission_type = randint(0, NUM_FINAL_MISSIONS - 1);
+            } while (manager->character_count == 1 && (manager->final_mission_type == CUT_OFF_EVERY_BULKHEAD_AND_VENT ||
+                                                       manager->final_mission_type == BLOW_IT_OUT_INTO_SPACE));
+            manager->final_mission_type = YOU_HAVE_MY_SYMPATHIES;
             setup_final_mission(manager);
         }
     } else {
@@ -221,10 +226,39 @@ void update_objectives(game_manager *manager)
  */
 void setup_final_mission(game_manager *manager)
 {
+    printf("[FINAL OBJECTIVE] - You have a new mission!\n");
+    printf("-----%s------\n", final_mission_names[manager->final_mission_type]);
+    printf("%s\n", final_mission_desc[manager->final_mission_type]);
+
     switch (manager->final_mission_type) {
-    case YOU_HAVE_MY_SYMPATHIES:
+    case YOU_HAVE_MY_SYMPATHIES:;
+        // Fill equipment storage or galley with coolant
+        room *yequipment_storage = get_room(manager->game_map, "EQUIPMENT STORAGE");
+        if (yequipment_storage == NULL) {
+            yequipment_storage = manager->game_map->player_start_room;
+        }
+        for (int i = 0; i < manager->character_count + 2; i++) {
+            yequipment_storage->room_items[i] = new_item(COOLANT_CANISTER);
+        }
+        yequipment_storage->num_items = max(yequipment_storage->num_items, manager->character_count + 2);
+        // Put Ash at MU-TH-UR
+        manager->ash_location = get_room(manager->game_map, "MU-TH-UR");
+        if (manager->ash_location == NULL) {
+            manager->ash_location = manager->game_map->ash_start_room;
+        }
+        manager->ash_health = 3;
+        manager->ash_killed = false;
         break;
-    case ESCAPE_ON_THE_NARCISSUS:
+    case ESCAPE_ON_THE_NARCISSUS:;
+        // Fill equipment storage or galley with coolant
+        room *eequipment_storage = get_room(manager->game_map, "EQUIPMENT STORAGE");
+        if (eequipment_storage == NULL) {
+            eequipment_storage = manager->game_map->player_start_room;
+        }
+        for (int i = 0; i < manager->character_count + 2; i++) {
+            eequipment_storage->room_items[i] = new_item(COOLANT_CANISTER);
+        }
+        eequipment_storage->num_items = max(eequipment_storage->num_items, manager->character_count + 2);
         break;
     case BLOW_IT_OUT_INTO_SPACE:
         // Replace and shuffle encounters
@@ -233,13 +267,14 @@ void setup_final_mission(game_manager *manager)
         break;
     case WERE_GOING_TO_BLOW_UP_THE_SHIP:;
         // Fill equipment storage or galley with coolant
-        room *equipment_storage = get_room(manager->game_map, "EQUIPMENT STORAGE");
-        if (equipment_storage == NULL) {
-            equipment_storage = manager->game_map->player_start_room;
+        room *wequipment_storage = get_room(manager->game_map, "EQUIPMENT STORAGE");
+        if (wequipment_storage == NULL) {
+            wequipment_storage = manager->game_map->player_start_room;
         }
-        for (int i = 0; i < manager->character_count + 1; i++) {
-            equipment_storage->room_items[i] = new_item(COOLANT_CANISTER);
+        for (int i = 0; i < manager->character_count + 2; i++) {
+            wequipment_storage->room_items[i] = new_item(COOLANT_CANISTER);
         }
+        wequipment_storage->num_items = max(wequipment_storage->num_items, manager->character_count + 2);
         // Give self destruct tracker to active character
         manager->active_character->self_destruct_tracker = 4;
         break;
@@ -351,10 +386,11 @@ room *character_move(game_manager *manager, struct character *to_move, room_queu
         int max_destination_index =
             allowed_moves == NULL ? to_move->current_room->connection_count : allowed_moves->size;
 
+        update_objectives(manager);
+
         if (allow_back && ch == 'b') {
             return to_move->current_room;
         } else if (allowed_moves == NULL && ch == 'l') {
-            update_objectives(manager);
             return to_move->current_room->ladder_connection;
         } else if (ch >= '0' && ch <= max_destination_index + '0') {
             if (allowed_moves == NULL) {
@@ -362,6 +398,44 @@ room *character_move(game_manager *manager, struct character *to_move, room_queu
             } else {
                 return poll_position(allowed_moves, ch - '0' - 1);
             }
+        }
+    }
+
+    // Check Escape on the Narcissus final mission
+    if (manager->is_final_mission && manager->final_mission_type == ESCAPE_ON_THE_NARCISSUS) {
+        // Win when all members in docking bay with 1 coolant dropped in docking bay each, with cat carrier and incinerator in inventory
+        room *docking_bay = get_room(manager->game_map, "DOCKING_BAY");
+        if (docking_bay == NULL) {
+            docking_bay = manager->game_map->player_start_room;
+        }
+
+        // Check coolant
+        int num_canisters = 0;
+        for (int i = 0; i < NUM_ROOM_ITEMS; i++) {
+            if (docking_bay->room_items[i] != NULL && docking_bay->room_items[i]->type == COOLANT_CANISTER) {
+                num_canisters++;
+            }
+        }
+        bool enough_dropped_canisters = num_canisters >= manager->character_count;
+
+        // Check inventory and location
+        bool all_in_docking_bay = true;
+        bool has_carrier = false;
+        bool has_incinerator = false;
+        for (int i = 0; i < manager->character_count; i++) {
+            if (manager->characters[i]->current_room != docking_bay) {
+                all_in_docking_bay = false;
+                break;
+            }
+            if (character_has_item(manager->characters[i], CAT_CARRIER)) {
+                has_carrier = true;
+            }
+            if (character_has_item(manager->characters[i], INCINERATOR)) {
+                has_incinerator = true;
+            }
+        }
+        if (enough_dropped_canisters && has_carrier && has_incinerator && all_in_docking_bay) {
+            win_game(manager);
         }
     }
 
@@ -515,17 +589,19 @@ bool xeno_move(game_manager *manager, int num_spaces, int morale_drop)
  */
 bool ash_move(game_manager *manager, int num_spaces)
 {
-    if (manager->ash_location == NULL) {
+    if (manager->ash_location == NULL || manager->ash_killed) {
         return false;
     }
 
-    manager->ash_location->num_scrap = 0;
+    if (manager->is_final_mission && manager->final_mission_type != YOU_HAVE_MY_SYMPATHIES) {
+        manager->ash_location->num_scrap = 0;
+    }
 
     // Get shortest path to a character or a room with scrap
     room_queue *shortest = NULL;
     int s = INT_MAX;
     // Scrap check
-    for (int i = 0; i < manager->game_map->room_count; i++) {
+    for (int i = 0; manager->final_mission_type != YOU_HAVE_MY_SYMPATHIES && i < manager->game_map->room_count; i++) {
         if (manager->game_map->rooms[i]->num_scrap == 0) {
             continue;
         }
@@ -544,7 +620,8 @@ bool ash_move(game_manager *manager, int num_spaces)
     // Character check
     for (int i = 0; i < manager->character_count; i++) {
         // Ash only moves if nobody is with him
-        if (manager->characters[i]->current_room == manager->ash_location) {
+        if (manager->is_final_mission && manager->final_mission_type != YOU_HAVE_MY_SYMPATHIES &&
+            manager->characters[i]->current_room == manager->ash_location) {
             if (shortest != NULL) {
                 free(shortest);
             }
@@ -567,7 +644,9 @@ bool ash_move(game_manager *manager, int num_spaces)
     // Move Ash along path
     if (s < num_spaces) {
         manager->ash_location = shortest->head;
-        manager->ash_location->num_scrap = 0;
+        if (manager->final_mission_type != YOU_HAVE_MY_SYMPATHIES) {
+            manager->ash_location->num_scrap = 0;
+        }
 
         ash_move(manager, num_spaces - s);
     } else if (num_spaces > 0) {
@@ -577,7 +656,9 @@ bool ash_move(game_manager *manager, int num_spaces)
         manager->ash_location = shortest->tail;
     }
 
-    manager->ash_location->num_scrap = 0;
+    if (manager->final_mission_type != YOU_HAVE_MY_SYMPATHIES) {
+        manager->ash_location->num_scrap = 0;
+    }
 
     // Check if Ash intercepts characters
     bool printed_message = false;
@@ -588,12 +669,49 @@ bool ash_move(game_manager *manager, int num_spaces)
                 printf("Ash meets you in %s!\n", manager->ash_location->name);
             }
 
-            if (manager->characters[i]->num_scrap > 0) {
-                printf("%s loses 1 Scrap!\n", manager->characters[i]->last_name);
-                manager->characters[i]->num_scrap--;
+            if (manager->final_mission_type != YOU_HAVE_MY_SYMPATHIES) {
+                if (manager->characters[i]->num_scrap > 0) {
+                    printf("%s loses 1 Scrap!\n", manager->characters[i]->last_name);
+                    manager->characters[i]->num_scrap--;
+                } else {
+                    printf("%s has no Scrap!\n", manager->characters[i]->last_name);
+                    reduce_morale(manager, 1, false);
+                }
             } else {
-                printf("%s has no Scrap!\n", manager->characters[i]->last_name);
-                reduce_morale(manager, 1, false);
+                if (character_has_item(manager->characters[i], COOLANT_CANISTER)) {
+                    printf("%s uses COOLANT CANISTER to hurt Ash!\n", manager->characters[i]->last_name);
+
+                    free(manager->characters[i]->coolant);
+                    manager->characters[i]->coolant = NULL;
+
+                    manager->ash_health -= 1;
+
+                    // Move Ash
+                    room_queue *ash_locations =
+                        find_rooms_by_distance(manager->game_map, manager->ash_location, 3, false);
+
+                    printf("Where to send Ash to?\n");
+                    for (int i = 0; i < ash_locations->size; i++) {
+                        printf("\t%d) %s\n", i + 1, poll_position(ash_locations, i)->name);
+                    }
+
+                    char ch = '\0';
+                    while (ch < '1' || ch > '0' + ash_locations->size) {
+                        ch = get_character();
+                    }
+
+                    ch = ch - '0' - 1;
+                    printf("Ash retreats to %s!\n", poll_position(ash_locations, ch)->name);
+                    manager->ash_location = poll_position(ash_locations, ch);
+                    i = 0;
+
+                    free(ash_locations);
+                } else {
+                    reduce_morale(manager, 3, false);
+                    flee(manager, manager->characters[i]);
+                }
+
+                check_ash_health(manager);
             }
         }
     }
@@ -601,53 +719,18 @@ bool ash_move(game_manager *manager, int num_spaces)
     free(shortest);
 
     return printed_message;
+}
 
-    /*
-    // Get shortest path to a character
-    room_queue *shortest = NULL;
-    int s = INT_MAX;
-    for (int i = 0; i < manager->character_count; i++) {
-        room_queue *rq =
-            shortest_path(manager->game_map, manager->xenomorph_location, manager->characters[i]->current_room);
-
-        if (rq != NULL && rq->size < s) {
-            if (shortest != NULL) {
-                free(shortest);
-            }
-
-            shortest = rq;
-            s = rq->size;
+void check_ash_health(game_manager *manager)
+{
+    if (manager->is_final_mission && manager->final_mission_type == YOU_HAVE_MY_SYMPATHIES && !manager->ash_killed) {
+        if (manager->ash_health == 0) {
+            manager->ash_killed = true;
+            printf("[FINAL OBJECTIVE] - You've killed Ash! Use an INCINERATOR on the Xenomorph to escape!\n");
+        } else {
+            printf("[FINAL OBJECTIVE] - Ash health = %d\n", manager->ash_health);
         }
     }
-
-    // Move xeno along path
-    if (s < num_spaces) {
-        manager->xenomorph_location = shortest->head;
-    } else if (num_spaces > 0) {
-        for (int i = 0; i < num_spaces && shortest->head->room_queue_next != NULL; i++) {
-            pop_tail(shortest);
-        }
-        manager->xenomorph_location = shortest->tail;
-    }
-
-    // Check if xeno intercepts characters
-    bool printed_message = false;
-    for (int i = 0; i < manager->character_count; i++) {
-        if (manager->characters[i]->current_room == manager->xenomorph_location) {
-            if (!printed_message) {
-                printed_message = true;
-                printf("The Xenomorph meets you in %s!\n", manager->xenomorph_location->name);
-            }
-
-            reduce_morale(manager, morale_drop, true);
-            flee(manager, manager->characters[i]);
-        }
-    }
-
-    free(shortest);
-
-    return printed_message;
-     */
 }
 
 /**
@@ -890,12 +973,13 @@ void trigger_encounter(game_manager *manager)
     }
 
     switch (encounter) {
+    case -1:
     case QUIET:;
         room *target_room =
             manager->game_map
                 ->rooms[manager->game_map->named_room_indices[randint(0, manager->game_map->named_room_count - 1)]];
         printf("[ENCOUNTER] - All is quiet in %s. Xenomorph moves 1 space.", target_room->name);
-        if (manager->ash_location != NULL) {
+        if (manager->ash_location != NULL && !manager->ash_killed) {
             printf(" Ash moves 1 space.\n");
         } else {
             printf("\n");
@@ -924,21 +1008,24 @@ void trigger_encounter(game_manager *manager)
 
         manager->xenomorph_location = manager->game_map->xenomorph_start_room;
         xeno_move(manager, 0, 2);
+        ash_move(manager, 1);
         replace_alien_cards();
 
         break;
     case ALIEN_Stalk:
         printf("[ENCOUNTER] - The Xenomorph is stalking...\n");
         xeno_move(manager, 3, 3);
+        ash_move(manager, 1);
 
         break;
     case ALIEN_Hunt:
         printf("[ENCOUNTER] - The Xenomorph is hunting!\n");
         xeno_move(manager, 2, 4);
+        ash_move(manager, 1);
 
         break;
     case ORDER937_Meet_Me_In_The_Infirmary:
-        if (manager->ash_location != NULL) {
+        if (manager->ash_location != NULL && !manager->ash_killed) {
             printf("[ENCOUNTER] - Meet Me in the Infirmary - Ash moves twice, and %s moves to %s\n",
                    manager->active_character->last_name,
                    manager->game_map->ash_start_room->name);
@@ -954,7 +1041,7 @@ void trigger_encounter(game_manager *manager)
 
         break;
     case ORDER937_Crew_Expendable:
-        if (manager->ash_location != NULL) {
+        if (manager->ash_location != NULL && !manager->ash_killed) {
             printf("[ENCOUNTER] - Crew Expendable - Ash moves twice, and %s loses all Scrap\n",
                    manager->active_character->last_name);
         } else {
@@ -967,7 +1054,7 @@ void trigger_encounter(game_manager *manager)
 
         break;
     case ORDER937_Collating_Data:
-        if (manager->ash_location != NULL) {
+        if (manager->ash_location != NULL && !manager->ash_killed) {
             printf("[ENCOUNTER] - Collating Data - Ash moves twice, and each character loses 1 "
                    "Scrap\n");
         } else {
@@ -979,6 +1066,9 @@ void trigger_encounter(game_manager *manager)
         }
         ash_move(manager, 2);
 
+        break;
+    default:
+        printf("[ERROR] - Unknown encounter type %d\n", encounter);
         break;
     }
 }
@@ -1210,6 +1300,7 @@ bool drop(game_manager *manager)
                     }
 
                     manager->active_character->coolant = NULL;
+                    manager->active_character->current_room->num_items++;
 
                     break_loop = true;
                 } else {
@@ -1282,9 +1373,9 @@ int use(game_manager *manager)
         if (ch == 'b') {
             return 0;
         } else {
-            ch = ch - '0' - 1;
+            int item_selection = ch - '0' - 1;
 
-            ITEM_TYPES item_type = manager->active_character->held_items[ch]->type;
+            ITEM_TYPES item_type = manager->active_character->held_items[usable_indices[item_selection]]->type;
 
             switch (item_type) {
             case MOTION_TRACKER:;
@@ -1309,7 +1400,7 @@ int use(game_manager *manager)
                     }
                     printf("\tb) Back\n");
 
-                    char ch = '\0';
+                    ch = '\0';
                     while (ch < '1' || ch > '0' + num_event_rooms) {
                         ch = get_character();
 
@@ -1323,7 +1414,7 @@ int use(game_manager *manager)
                         return 0;
                     } else {
                         ch = ch - '0' - 1;
-                        use_item(manager->active_character, manager->active_character->held_items[ch]);
+                        use_item(manager->active_character, manager->active_character->held_items[item_selection]);
                         trigger_event(manager, manager->active_character, poll_position(within_2, event_rooms[ch]));
 
                         break_loop = 1;
@@ -1349,7 +1440,7 @@ int use(game_manager *manager)
                     }
                     printf("\tb) Back\n");
 
-                    char ch = '\0';
+                    ch = '\0';
                     while (ch < '1' || ch > '0' + alien_locations->size) {
                         ch = get_character();
 
@@ -1363,7 +1454,7 @@ int use(game_manager *manager)
                         return 0;
                     } else {
                         ch = ch - '0' - 1;
-                        use_item(manager->active_character, manager->active_character->held_items[ch]);
+                        use_item(manager->active_character, manager->active_character->held_items[item_selection]);
                         printf("The Xenomorph retreats to %s!\n", poll_position(alien_locations, ch)->name);
                         manager->xenomorph_location = poll_position(alien_locations, ch);
                     }
@@ -1379,12 +1470,21 @@ int use(game_manager *manager)
                     free(incinerator_q);
                     return 0;
                 } else {
-                    use_item(manager->active_character, manager->active_character->held_items[ch]);
+                    use_item(manager->active_character, manager->active_character->held_items[item_selection]);
                     printf("The Xenomorph retreats to %s!\n", manager->game_map->xenomorph_start_room->name);
                     manager->xenomorph_location = manager->game_map->xenomorph_start_room;
-                    break_loop = 2;
+
+                    free(incinerator_q);
+
+                    // Check "You Have My Sympathies" final mission
+                    if (manager->is_final_mission && manager->final_mission_type == YOU_HAVE_MY_SYMPATHIES &&
+                        manager->ash_killed) {
+                        win_game(manager);
+                    }
+
+                    return 2;
                 }
-                free(incinerator_q);
+
                 break;
             }
         }
@@ -1426,7 +1526,7 @@ void game_loop(game_manager *manager)
 
             manager->active_character = manager->characters[manager->turn_index];
             character *active = manager->active_character;
-            printf("-----Turn %d: %s------\n", manager->turn_index + 1, active->last_name);
+            printf("------Turn %d: %s------\n", manager->turn_index + 1, active->last_name);
 
             if (active->self_destruct_tracker > 0) {
                 active->self_destruct_tracker--;
@@ -1493,7 +1593,7 @@ void game_loop(game_manager *manager)
                             printf("Canceled move\n");
                         } else {
                             // Move successful
-                            printf("Moved %s from %s to %s\n",
+                            printf("%s moved from %s to %s\n",
                                    active->last_name,
                                    last_room->name,
                                    active->current_room->name);
@@ -1510,6 +1610,9 @@ void game_loop(game_manager *manager)
                                 j = 0;
                                 do_encounter = false;
                             }
+
+                            // Check if player moved into ash area
+                            ash_move(manager, 0);
 
                             update_objectives(manager);
 
@@ -1537,7 +1640,8 @@ void game_loop(game_manager *manager)
                                 room *last_room = manager->characters[ao->move_character_index]->current_room;
                                 manager->characters[ao->move_character_index]->current_room =
                                     character_move(manager, manager->characters[ao->move_character_index], NULL, false);
-                                printf("Moved %s from %s to %s\n",
+                                printf("%s moved %s from %s to %s\n",
+                                       active->last_name,
                                        manager->characters[ao->move_character_index]->last_name,
                                        last_room->name,
                                        manager->characters[ao->move_character_index]->current_room->name);
@@ -1626,7 +1730,7 @@ void game_loop(game_manager *manager)
                         int u = use(manager);
                         if (u != 0) {
                             break_loop = true;
-                            do_encounter &= u == 2;
+                            do_encounter &= u != 2;
                         }
 
                         break;
@@ -1771,8 +1875,11 @@ void game_loop(game_manager *manager)
                         break;
                     case 'o':
                         if (manager->is_final_mission) {
-                            printf("-----%s------\n", final_mission_names[manager->final_mission_type]);
+                            printf("------%s------\n", final_mission_names[manager->final_mission_type]);
                             printf("%s\n", final_mission_desc[manager->final_mission_type]);
+                            if (manager->final_mission_type == YOU_HAVE_MY_SYMPATHIES) {
+                                printf("Ash health: %d\n", manager->ash_health);
+                            }
                         } else {
                             print_game_objectives(manager);
                         }

@@ -74,6 +74,7 @@ item *new_item(ITEM_TYPES type)
 {
     item *out = (item *)malloc(sizeof(item));
     out->type = type;
+    out->uses_action = item_uses_actions[type];
     out->uses = item_uses[type];
     return out;
 }

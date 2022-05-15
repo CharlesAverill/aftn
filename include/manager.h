@@ -42,6 +42,10 @@ struct game_manager {
     room *xenomorph_location;
     // Pointer to Ash's current location
     room *ash_location;
+    // How much health Ash has for "You Have My Sympathies" final mission
+    int ash_health;
+    // Whether or not Ash has been killed
+    bool ash_killed;
 
     // Whether or not Jonesy has been caught in a cat carrier
     bool jonesy_caught;
@@ -71,6 +75,7 @@ void win_game(game_manager *manager);
 room *character_move(game_manager *manager, struct character *to_move, room_queue *allowed_moves, bool allow_back);
 bool xeno_move(game_manager *manager, int num_spaces, int morale_drop);
 bool ash_move(game_manager *manager, int num_spaces);
+void check_ash_health(game_manager *manager);
 
 int reduce_morale(game_manager *manager, int lost, bool encountered_alien);
 int trigger_event(game_manager *manager, struct character *moved, room *motion_tracker_room);
