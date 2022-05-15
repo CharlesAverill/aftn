@@ -20,6 +20,22 @@ objective objectives_stack[NUM_OBJECTIVES] = {
     {"GIVE IT A LITTLE INCENTIVE", BRING_ITEM_TO_LOCATION, false, "GALLEY", 0, ELECTRIC_PROD, 0},
 };
 
+char *final_mission_names[NUM_FINAL_MISSIONS] = {"You Have My Sympathies",
+                                                 "Escape On The Narcissus",
+                                                 "Blow It Out Into Space",
+                                                 "We're Going To Blow Up The Ship",
+                                                 "Cut Off Every Bulkhead And Vent"};
+
+char *final_mission_desc[NUM_FINAL_MISSIONS] = {
+    "Defeat Ash, then incinerate the Xenomorph",
+    "Assemble all Crew members in DOCKING BAY. DOCKING BAY must have a COOLANT CANISTER for each Crew member. Crew "
+    "must have a CAT CARRIER and INCINERATOR.",
+    "Bring the Xenomorph near DOCKING BAY. A Crew member must be in AIRLOCK and another in BRIDGE, then encounter the "
+    "Xenomorph at the end of a turn.",
+    "Assemble all Crew members in AIRLOCK with at least 1 Scrap and 1 COOLANT CANISTER within 4 turns before the "
+    "Nostromo self-destructs.",
+    "Clear all Events within 4 turns before the Nostromo self-destructs."};
+
 /**
  * Get an array of n random objectives
  * @param  n               Number of objectives to get

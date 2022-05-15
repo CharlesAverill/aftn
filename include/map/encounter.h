@@ -8,6 +8,7 @@
 #ifndef ENCOUNTER_H
 #define ENCOUNTER_H
 
+#include <stdbool.h>
 #include <stdlib.h>
 
 // Enum of different types of encounter
@@ -34,6 +35,7 @@ void shuffle_encounters();
 
 int draw_encounter();
 int discard_encounter();
+void replace_all_encounters();
 void replace_encounter();
 
 void replace_alien_cards();

@@ -41,6 +41,19 @@ typedef struct objective {
     int minimum_scrap;
 } objective;
 
+// Final mission types, all logic handled by game_manager
+#define NUM_FINAL_MISSIONS 5
+typedef enum {
+    YOU_HAVE_MY_SYMPATHIES,
+    ESCAPE_ON_THE_NARCISSUS,
+    BLOW_IT_OUT_INTO_SPACE,
+    WERE_GOING_TO_BLOW_UP_THE_SHIP,
+    CUT_OFF_EVERY_BULKHEAD_AND_VENT
+} FINAL_MISSION_TYPES;
+
+extern char *final_mission_names[NUM_FINAL_MISSIONS];
+extern char *final_mission_desc[NUM_FINAL_MISSIONS];
+
 #define NUM_OBJECTIVES 10
 extern objective objectives_stack[NUM_OBJECTIVES];
 

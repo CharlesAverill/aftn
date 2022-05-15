@@ -48,7 +48,7 @@ ENCOUNTER_TYPES discard_encounters[ENCOUNTER_STACK_SIZE] = {-1, -1, -1, -1, -1, 
  */
 void shuffle_encounters()
 {
-    for (int i = ENCOUNTER_STACK_SIZE - 1; i > 0; i--) {
+    for (int i = num_encounters; i > 0; i--) {
         int j = rand() % (i + 1);
 
         ENCOUNTER_TYPES tmp = encounters[i];
@@ -76,6 +76,10 @@ int draw_encounter()
  */
 int discard_encounter()
 {
+    if (num_encounters <= 0) {
+        return -1;
+    }
+
     discard_encounters[ENCOUNTER_STACK_SIZE - num_encounters] = encounters[num_encounters - 1];
     encounters[num_encounters - 1] = -1;
     num_encounters--;
@@ -87,9 +91,57 @@ int discard_encounter()
  */
 void replace_encounter()
 {
+    if (num_encounters >= ENCOUNTER_STACK_SIZE) {
+        return;
+    }
+
     encounters[num_encounters] = discard_encounters[ENCOUNTER_STACK_SIZE - num_encounters - 1];
     discard_encounters[ENCOUNTER_STACK_SIZE - num_encounters - 1] = -1;
     num_encounters++;
+}
+
+/**
+ * Put all encounter cards back in the stack
+ */
+void replace_all_encounters()
+{
+    while (num_encounters < ENCOUNTER_STACK_SIZE) {
+        replace_encounter();
+    }
+    shuffle_encounters();
+}
+
+/**
+ * Replace a discarded card at position i
+ * @param idx  Index in discarded pile
+ * @return     Whether or not the replace was successful
+ */
+bool replace_card(int idx)
+{
+    if (num_encounters >= ENCOUNTER_STACK_SIZE) {
+        return false;
+    }
+
+    encounters[num_encounters] = discard_encounters[idx];
+    discard_encounters[idx] = -1;
+    num_encounters++;
+
+    for (int i = 0; i < ENCOUNTER_STACK_SIZE - 1; i++) {
+        if (discard_encounters[i] == -1) {
+            int j;
+            for (j = i; j < ENCOUNTER_STACK_SIZE; j++) {
+                if (discard_encounters[j] != -1) {
+                    break;
+                }
+            }
+            if (j == ENCOUNTER_STACK_SIZE - 1) {
+                break;
+            }
+            discard_encounters[i] = discard_encounters[j];
+        }
+    }
+
+    return true;
 }
 
 /**
@@ -97,6 +149,13 @@ void replace_encounter()
  */
 void replace_alien_cards()
 {
+    for (int i = 0; i < ENCOUNTER_STACK_SIZE - num_encounters; i++) {
+        if (discard_encounters[i] >= ALIEN_Lost_The_Signal && discard_encounters[i] <= ALIEN_Hunt) {
+            replace_card(i);
+            i--;
+        }
+    }
+    shuffle_encounters();
 }
 
 /**
@@ -104,4 +163,12 @@ void replace_alien_cards()
  */
 void replace_order937_cards()
 {
+    for (int i = 0; i < ENCOUNTER_STACK_SIZE - num_encounters; i++) {
+        if (discard_encounters[i] >= ORDER937_Meet_Me_In_The_Infirmary &&
+            discard_encounters[i] <= ORDER937_Collating_Data) {
+            replace_card(i);
+            i--;
+        }
+    }
+    shuffle_encounters();
 }

@@ -18,7 +18,7 @@ room *create_room(char name[32], bool is_corridor)
     new_room->has_event = false;
 
     new_room->num_items = 0;
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < NUM_ROOM_ITEMS; i++) {
         new_room->room_items[i] = NULL;
     }
 
@@ -81,7 +81,7 @@ void print_room(room *r, bool prepend_tab)
 
     printf("%sItems: ", prepend);
     bool found_item = false;
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < NUM_ROOM_ITEMS; i++) {
         if (r->room_items[i] != NULL) {
             if (!found_item) {
                 found_item = true;

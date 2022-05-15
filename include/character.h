@@ -42,6 +42,9 @@ struct character {
     // The number of scrap this character holds
     int num_scrap;
 
+    // The self destruct tracker
+    int self_destruct_tracker;
+
     // The number of items this character holds
     int num_items;
     // General held items (not coolant)

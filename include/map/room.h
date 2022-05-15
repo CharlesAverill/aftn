@@ -16,6 +16,7 @@
 #include "item.h"
 
 // Structure containing general room data
+#define NUM_ROOM_ITEMS 6
 typedef struct room room;
 struct room { // This forward declaration allows for a room pointer in the struct definition
     // Room name
@@ -33,7 +34,7 @@ struct room { // This forward declaration allows for a room pointer in the struc
     // Number of items in the room
     int num_items;
     // Array of pointers to items in the room
-    item *room_items[4];
+    item *room_items[NUM_ROOM_ITEMS];
 
     // Number of connections to other rooms
     int connection_count;

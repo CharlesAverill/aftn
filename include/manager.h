@@ -30,6 +30,10 @@ struct game_manager {
     int num_objectives;
     // Array of objectives to complete before the final mission is revealed
     objective *game_objectives;
+    // Whether or not game is on final mission
+    bool is_final_mission;
+    // Final mission type - determined upon completing all other objectives
+    FINAL_MISSION_TYPES final_mission_type;
 
     // Pointer to the game's map
     map *game_map;
@@ -59,6 +63,10 @@ game_manager *new_game(const arguments args, map *game_map);
 
 void print_game_objectives(game_manager *manager);
 void update_objectives(game_manager *manager);
+void setup_final_mission(game_manager *manager);
+void update_final_mission(game_manager *manager);
+
+void win_game(game_manager *manager);
 
 room *character_move(game_manager *manager, struct character *to_move, room_queue *allowed_moves, bool allow_back);
 bool xeno_move(game_manager *manager, int num_spaces, int morale_drop);

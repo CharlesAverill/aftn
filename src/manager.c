@@ -124,6 +124,8 @@ game_manager *new_game(const arguments args, map *game_map)
             manager->game_objectives[i].location = manager->game_map->player_start_room;
         }
     }
+    manager->is_final_mission = false;
+    manager->final_mission_type = -1;
 
     // Jonesy setup
     manager->jonesy_caught = false;
@@ -180,7 +182,7 @@ void update_objectives(game_manager *manager)
                 break;
             case DROP_COOLANT:;
                 int coolant_count = 0;
-                for (int j = 0; j < 4; j++) {
+                for (int j = 0; j < NUM_ROOM_ITEMS; j++) {
                     if (manager->game_objectives[i].location->room_items[j] != NULL &&
                         manager->game_objectives[i].location->room_items[j]->type == COOLANT_CANISTER) {
                         coolant_count++;
@@ -196,16 +198,118 @@ void update_objectives(game_manager *manager)
     }
 
     // Check for final mission
-    bool all_complete = true;
-    for (int i = 0; i < manager->num_objectives; i++) {
-        all_complete &= manager->game_objectives[i].completed;
+    if (!manager->is_final_mission) {
+        bool all_complete = true;
+        for (int i = 0; i < manager->num_objectives; i++) {
+            all_complete &= manager->game_objectives[i].completed;
+        }
+
+        if (all_complete) {
+            printf("[OBJECTIVE] - Completed all missions\n");
+            manager->is_final_mission = true;
+            manager->final_mission_type = randint(0, NUM_FINAL_MISSIONS - 1);
+            setup_final_mission(manager);
+        }
+    } else {
+        update_final_mission(manager);
+    }
+}
+
+/**
+ * Set up the final mission
+ * @param manager  Game manager
+ */
+void setup_final_mission(game_manager *manager)
+{
+    switch (manager->final_mission_type) {
+    case YOU_HAVE_MY_SYMPATHIES:
+        break;
+    case ESCAPE_ON_THE_NARCISSUS:
+        break;
+    case BLOW_IT_OUT_INTO_SPACE:
+        // Replace and shuffle encounters
+        replace_all_encounters();
+        shuffle_encounters();
+        break;
+    case WERE_GOING_TO_BLOW_UP_THE_SHIP:;
+        // Fill equipment storage or galley with coolant
+        room *equipment_storage = get_room(manager->game_map, "EQUIPMENT STORAGE");
+        if (equipment_storage == NULL) {
+            equipment_storage = manager->game_map->player_start_room;
+        }
+        for (int i = 0; i < manager->character_count + 1; i++) {
+            equipment_storage->room_items[i] = new_item(COOLANT_CANISTER);
+        }
+        // Give self destruct tracker to active character
+        manager->active_character->self_destruct_tracker = 4;
+        break;
+    case CUT_OFF_EVERY_BULKHEAD_AND_VENT:
+        // Add events to every named room
+        for (int i = 0; i < manager->game_map->named_room_count; i++) {
+            manager->game_map->rooms[manager->game_map->named_room_indices[i]]->has_event = true;
+        }
+        // Give self destruct tracker to active character
+        manager->active_character->self_destruct_tracker = 4;
+        break;
+    }
+}
+
+/**
+ * Check if final mission criteria have been met, win game if so
+ * @param manager  Game manager
+ */
+void update_final_mission(game_manager *manager)
+{
+    bool game_won = false;
+
+    switch (manager->final_mission_type) {
+    case YOU_HAVE_MY_SYMPATHIES:
+        break;
+    case ESCAPE_ON_THE_NARCISSUS:
+        break;
+    case BLOW_IT_OUT_INTO_SPACE:
+        // Win if alien is in or adjacent to DOCKING BAY, a crew member is at AIRLOCK and another at BRIDGE,
+        // and an alien is encountered (see trigger_encounter)
+        break;
+    case WERE_GOING_TO_BLOW_UP_THE_SHIP:
+        // Win if all members are in airlock with 1 coolant canister and 1 scrap each
+        game_won = true;
+
+        // Get airlock or galley
+        room *airlock = get_room(manager->game_map, "AIRLOCK");
+        if (airlock == NULL) {
+            airlock = manager->game_map->player_start_room;
+        }
+
+        for (int i = 0; i < manager->character_count; i++) {
+            if (manager->characters[i]->num_scrap == 0 || manager->characters[i]->coolant == NULL) {
+                game_won = false;
+            }
+        }
+        break;
+    case CUT_OFF_EVERY_BULKHEAD_AND_VENT:
+        // Win if all events are gone
+        game_won = true;
+        for (int i = 0; i < manager->game_map->named_room_count; i++) {
+            if (manager->game_map->rooms[manager->game_map->named_room_indices[i]]->has_event) {
+                game_won = false;
+            }
+        }
+        break;
     }
 
-    if (all_complete) {
-        printf("[OBJECTIVE] - Completed all missions\n");
-        // TODO : Add final mission
-        exit(0);
+    if (game_won) {
+        win_game(manager);
     }
+}
+
+/**
+ * Win the game
+ */
+void win_game(game_manager *manager)
+{
+    printf("[FINAL OBJECTIVE] - Complete! You Win!\n");
+    exit(0);
 }
 
 /**
@@ -745,6 +849,46 @@ void trigger_encounter(game_manager *manager)
     int discard_index = draw_encounter();
     ENCOUNTER_TYPES encounter = discard_encounters[discard_index];
 
+    // Check "Blow it out into space" final mission
+    if (manager->final_mission_type == BLOW_IT_OUT_INTO_SPACE && encounter >= ALIEN_Lost_The_Signal &&
+        encounter <= ALIEN_Hunt) {
+        // Win if alien is in or adjacent to DOCKING BAY, a crew member is at AIRLOCK and another at BRIDGE,
+        // and an alien is encountered
+        room *docking_bay = get_room(manager->game_map, "DOCKING BAY");
+        if (docking_bay == NULL) {
+            docking_bay = manager->game_map->player_start_room;
+        }
+
+        room *airlock = get_room(manager->game_map, "AIRLOCK");
+        if (airlock == NULL) {
+            airlock = manager->game_map->ash_start_room;
+        }
+
+        room *bridge = get_room(manager->game_map, "BRIDGE");
+        if (bridge == NULL) {
+            bridge = manager->game_map->xenomorph_start_room;
+        }
+
+        bool xeno_in_right_place = manager->xenomorph_location == docking_bay;
+        for (int i = 0; i < docking_bay->connection_count; i++) {
+            xeno_in_right_place |= manager->xenomorph_location == docking_bay->connections[i];
+        }
+
+        bool airlock_right_place = false;
+        bool bridge_right_place = false;
+        for (int i = 0; i < manager->character_count; i++) {
+            if (manager->characters[i]->current_room == airlock) {
+                airlock_right_place = true;
+            } else if (manager->characters[i]->current_room == bridge) {
+                bridge_right_place = true;
+            }
+        }
+
+        if (xeno_in_right_place && airlock_right_place && bridge_right_place) {
+            win_game(manager);
+        }
+    }
+
     switch (encounter) {
     case QUIET:;
         room *target_room =
@@ -766,7 +910,9 @@ void trigger_encounter(game_manager *manager)
             target_room->num_scrap += 1;
         }
 
-        target_room->has_event = true;
+        if (manager->final_mission_type != CUT_OFF_EVERY_BULKHEAD_AND_VENT) {
+            target_room->has_event = true;
+        }
 
         xeno_move(manager, 1, 2);
         ash_move(manager, 1);
@@ -877,7 +1023,7 @@ bool pickup(game_manager *manager)
         }
 
         // Print room items
-        int item_indices[4] = {-1, -1, -1, -1};
+        int item_indices[NUM_ROOM_ITEMS] = {-1, -1, -1, -1, -1, -1};
         for (int k = 0; k < manager->active_character->current_room->num_items; k++) {
             if (manager->active_character->current_room->room_items[k] != NULL) {
                 item_indices[k] = option_index;
@@ -916,12 +1062,13 @@ bool pickup(game_manager *manager)
                 printf("%s picked up %d Scrap\n", manager->active_character->last_name, ch - '0');
                 manager->active_character->current_room->num_scrap -= ch - '0';
                 manager->active_character->num_scrap += ch - '0';
+                manager->active_character->num_scrap = min(9, manager->active_character->num_scrap);
 
                 break_loop = true;
             } else {
                 item *target_item = NULL;
                 int m;
-                for (m = 0; m < 4; m++) {
+                for (m = 0; m < NUM_ROOM_ITEMS; m++) {
                     if (item_indices[m] == selection_index) {
                         target_item = manager->active_character->current_room->room_items[m];
                         break;
@@ -1040,7 +1187,7 @@ bool drop(game_manager *manager)
                 manager->active_character->num_scrap -= ch - '0';
 
                 break_loop = true;
-            } else if (manager->active_character->current_room->num_items < 4) {
+            } else if (manager->active_character->current_room->num_items < NUM_ROOM_ITEMS) {
                 item *target_item = NULL;
                 int k;
                 for (k = 0; k < 3; k++) {
@@ -1055,7 +1202,7 @@ bool drop(game_manager *manager)
                            manager->active_character->last_name,
                            manager->active_character->current_room->name);
 
-                    for (int m = 0; m < 4; m++) {
+                    for (int m = 0; m < NUM_ROOM_ITEMS; m++) {
                         if (manager->active_character->current_room->room_items[m] == NULL) {
                             manager->active_character->current_room->room_items[m] = manager->active_character->coolant;
                             break;
@@ -1071,7 +1218,7 @@ bool drop(game_manager *manager)
                            item_names[target_item->type],
                            manager->active_character->current_room->name);
 
-                    for (int l = 0; l < 4; l++) {
+                    for (int l = 0; l < NUM_ROOM_ITEMS; l++) {
                         if (manager->active_character->current_room->room_items[l] == NULL) {
                             manager->active_character->current_room->room_items[l] =
                                 manager->active_character->held_items[k];
@@ -1086,7 +1233,7 @@ bool drop(game_manager *manager)
                     break_loop = true;
                 }
             } else {
-                printf("%s already has 4 items\n", manager->active_character->current_room->name);
+                printf("%s already has %d items\n", manager->active_character->current_room->name, NUM_ROOM_ITEMS);
             }
         }
     }
@@ -1281,6 +1428,18 @@ void game_loop(game_manager *manager)
             character *active = manager->active_character;
             printf("-----Turn %d: %s------\n", manager->turn_index + 1, active->last_name);
 
+            if (active->self_destruct_tracker > 0) {
+                active->self_destruct_tracker--;
+
+                if (active->self_destruct_tracker <= 0) {
+                    printf("[SELF-DESTRUCT] The Self-Destruct timer drops to 0!\n");
+                    printf("[GAME OVER] - The Nostromo self-destructed with the Crew still on it!\n");
+                    exit(0);
+                } else {
+                    printf("[SELF-DESTRUCT] The Self-Destruct timer drops to %d!\n", active->self_destruct_tracker);
+                }
+            }
+
             // Some abilities can only be used once per turn
             bool used_ability = false;
 
@@ -1290,17 +1449,17 @@ void game_loop(game_manager *manager)
             for (int j = active->max_actions; j > 0; j--) {
                 active->current_actions = j;
 
-                char ch = '\0';
+                char choice = '\0';
                 while (1) {
 
                     printf("Actions - %d/%d\n", active->current_actions, active->max_actions);
 
-                    ch = get_character();
+                    choice = get_character();
 
                     bool break_loop = false;
                     bool recognized = true;
 
-                    switch (ch) {
+                    switch (choice) {
                     case 'h':
                         printf("m - move\n"
                                "p - pick up\n"
@@ -1310,14 +1469,20 @@ void game_loop(game_manager *manager)
                                "k - view team info\n"
                                "c - craft\n"
                                "u - use item\n"
-                               "t - trade\n"
+                               "g - give item\n"
                                "s - end turn early\n"
                                "v - view current room\n"
                                "l - character locations\n"
-                               "o - print game objectives\n"
+                               "%s"
+                               "%s"
                                "q - draw map\n"
                                "r - print text map\n"
-                               "e - exit\n");
+                               "e - exit\n",
+                               manager->is_final_mission ? "o - print final objective\n"
+                                                         : "o - print game objectives\n",
+                               manager->final_mission_type == BLOW_IT_OUT_INTO_SPACE
+                                   ? "n - discard scrap, view next encounter\n"
+                                   : "");
 
                         break;
                     case 'm':; // Start case with assignment
@@ -1465,10 +1630,121 @@ void game_loop(game_manager *manager)
                         }
 
                         break;
-                    case 't':
-                        printf("Trade\n");
+                    case 'g':;
+                        // Check if can give item
+                        int tradeable_indices[5];
+                        int num_tradeable = 0;
+                        for (int m = 0; m < manager->character_count; m++) {
+                            if (manager->characters[m] != active &&
+                                manager->characters[m]->current_room == active->current_room &&
+                                ((active->num_items > 0 && manager->characters[m]->num_items < 3) ||
+                                 (active->coolant != NULL && active->coolant == NULL) || active->num_scrap > 0)) {
+                                tradeable_indices[num_tradeable++] = m;
+                            }
+                        }
 
-                        break_loop = true;
+                        if (num_tradeable == 0) {
+                            printf("Can't give anything right now.\n");
+                        } else {
+                            printf("Give options:\n");
+                            printf("Characters:\n");
+
+                            for (int m = 0; m < num_tradeable; m++) {
+                                printf("\t%d) %s\n", m + 1, manager->characters[tradeable_indices[m]]->last_name);
+                            }
+                            printf("\tb) Back\n");
+
+                            char ch = '\0';
+                            while (ch < '1' || ch > '0' + num_tradeable) {
+                                ch = get_character();
+
+                                if (ch == 'b') {
+                                    break;
+                                }
+                            }
+
+                            character *give_target = manager->characters[tradeable_indices[ch - '0' - 1]];
+
+                            if (ch != 'b') {
+                                printf("Items:\n");
+
+                                int item_indices[3];
+                                int num_items = 0;
+                                if (give_target->num_items < 3) {
+                                    for (int m = 0; m < 3; m++) {
+                                        if (active->held_items[m] != NULL) {
+                                            printf("\t%d) ", m + 1);
+                                            print_item(active->held_items[m]);
+
+                                            item_indices[num_items++] = m;
+                                        }
+                                    }
+                                }
+                                if (active->coolant != NULL && give_target->coolant == NULL) {
+                                    printf("\tc) ");
+                                    print_item(active->coolant);
+                                }
+                                if (active->num_scrap > 0) {
+                                    printf("\ts) Scrap (%d)\n", active->num_scrap);
+                                }
+                                printf("\tb) Back\n");
+
+                                ch = '\0';
+                                while (ch < '1' || ch > '0' + num_items || num_items == 0) {
+                                    ch = get_character();
+
+                                    if ((give_target->coolant == NULL && ch == 'c') ||
+                                        (active->num_scrap > 0 && ch == 's') || ch == 'b') {
+                                        break;
+                                    }
+                                }
+
+                                if (ch == 'b') {
+                                    break;
+                                } else {
+                                    if (give_target->coolant == NULL && ch == 'c') { // Give coolant
+                                        printf("%s gave COOLANT CANISTER to %s\n",
+                                               active->last_name,
+                                               give_target->last_name);
+                                        give_target->coolant = active->coolant;
+                                        active->coolant = NULL;
+                                        break_loop = true;
+                                    } else if (active->num_scrap > 0 && ch == 's') { // Give scrap
+                                        printf("How much? (Max %d) ", active->num_scrap);
+
+                                        ch = '\0';
+                                        while (ch < '1' || ch > '0' + active->num_scrap) {
+                                            ch = get_character();
+                                        }
+                                        ch -= '0';
+
+                                        active->num_scrap -= ch;
+                                        give_target->num_scrap += ch;
+
+                                        printf("%s gave %s %d Scrap.\n", active->last_name, give_target->last_name, ch);
+                                        break_loop = true;
+                                    } else { // Give item
+                                        for (int m = 0; m < 3; m++) {
+                                            if (give_target->held_items[m] == NULL) {
+                                                give_target->held_items[m] = active->held_items[ch - '0' - 1];
+                                                active->held_items[ch - '0' - 1] = NULL;
+                                                break;
+                                            }
+                                        }
+
+                                        printf("%s gave %s to %s\n",
+                                               active->last_name,
+                                               item_names[give_target->held_items[ch - '0' - 1]->type],
+                                               give_target->last_name);
+
+                                        active->num_items--;
+                                        give_target->num_items++;
+
+                                        break_loop = true;
+                                    }
+                                }
+                            }
+                        }
 
                         break;
                     case 's':
@@ -1494,8 +1770,34 @@ void game_loop(game_manager *manager)
 
                         break;
                     case 'o':
-                        print_game_objectives(manager);
+                        if (manager->is_final_mission) {
+                            printf("-----%s------\n", final_mission_names[manager->final_mission_type]);
+                            printf("%s\n", final_mission_desc[manager->final_mission_type]);
+                        } else {
+                            print_game_objectives(manager);
+                        }
 
+                        break;
+                    case 'n':
+                        if (manager->final_mission_type == BLOW_IT_OUT_INTO_SPACE) {
+                            if (manager->active_character->num_scrap == 0) {
+                                printf("Must have at least 1 Scrap to use this ability.\n");
+                                break_loop = false;
+                            } else {
+                                ability_output *ao = lambert_ability(manager->game_map, manager->characters, active);
+
+                                break_loop = ao->use_action;
+                                used_ability = false;
+
+                                if (break_loop) {
+                                    manager->active_character->num_scrap--;
+                                }
+
+                                free(ao);
+                            }
+                        } else {
+                            recognized = false;
+                        }
                         break;
                     case 'q':
                         printf("%s\n", manager->game_map->ascii_map);
