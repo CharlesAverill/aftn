@@ -3,12 +3,26 @@
 This is a terminal-based clone of the ["ALIEN: Fate of The Nostromo" board game](https://boardgamegeek.com/boardgame/332321/alien-fate-nostromo), implemented in C.
 
 ## Installation
+
+### Debug
+Installs to `bin/`
 ```sh
 git clone https://github.com/CharlesAverill/aftn.git
 cd aftn
 
 cmake -S . -B build
 cmake --build build
+```
+
+### Full Install
+Installs to `/usr/share/aftn/`
+```sh
+git clone https://github.com/CharlesAverill/aftn.git
+cd aftn
+
+cmake -S . -B build
+cmake --build build
+sudo cmake --build build --target install
 ```
 
 ## Usage
