@@ -11,10 +11,11 @@
 #include <string.h>
 
 #include "arguments.h"
+#include "config.h"
 #include "manager.h"
 #include "map/map.h"
 
-const char *argp_program_version = "aftn 0.0.1";
+const char *argp_program_version = CONFIG_ARGP_PROGRAM_VERSION;
 const char *argp_program_bug_address = "charles@utdallas.edu";
 static char doc[] = "A C port of Alien: Fate of The Nostromo, a 2021 board "
                     "game of the same name";
@@ -25,8 +26,8 @@ static struct argp_option options[] = {
     {"n_characters", 'c', "integer", 0, "Number of characters to create"},
     {"use_ash", 'a', 0, 0, "Include Ash for a more challenging game"},
     {"game", 'g', "FILE", 0,
-     "Read game board from this path rather than the default. Check "
-     "/usr/share/games/aftn/maps/format.txt to create your own game boards"},
+     "Read game board from this path rather than the default. "
+     "Check " CONFIG_format_txt_LOCATION " to create your own game boards"},
     {"print_map", 'p', 0, 0, "Print out a text representation of the game map"},
     {"draw_map", 'd', 0, 0, "Draw the game map if an ASCII map is provided"},
     {0}};

@@ -19,7 +19,7 @@ Usage: aftn [OPTION...]
   -c, --n_characters=integer Number of characters to create
   -d, --draw_map             Draw the game map if an ASCII map is provided
   -g, --game=FILE            Read game board from this path rather than the
-                             default. Check /var/games/aftn/maps/format.txt to
+                             default. Check [game_data/maps/format.txt](https://github.com/CharlesAverill/aftn/tree/main/game_data/maps/format.txt) to
                              create your own game boards
   -n, --n_players=integer    Number of players to create
   -p, --print_map            Print out a text representation of the game map

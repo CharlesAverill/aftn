@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(aftn C)
+project(aftn LANGUAGES C VERSION 0.0.2)
 
 # https://cmake.org/cmake/help/latest/prop_tgt/C_STANDARD.html
 string(COMPARE EQUAL "${CMAKE_C_STANDARD}" "" no_cmake_c_standard_set)
@@ -28,15 +28,24 @@ install(FILES ${CMAKE_SOURCE_DIR}/game_data/banner.txt DESTINATION share/games/a
 
 if(InstallMaterials)
     install(FILES ${CMAKE_SOURCE_DIR}/game_data/materials DESTINATION share/games/aftn/game_data)
-    add_compile_definitions(DEFAULT_MAP="${CMAKE_INSTALL_PREFIX}/share/games/aftn/game_data/maps/default"
+    add_compile_definitions(GAME_DATA="${CMAKE_INSTALL_PREFIX}/share/games/aftn/game_data/"
+                            DEFAULT_MAP="${CMAKE_INSTALL_PREFIX}/share/games/aftn/game_data/maps/default"
                             BANNER="${CMAKE_INSTALL_PREFIX}/share/games/aftn/game_data/banner.txt"
     )
 else()
-    add_compile_definitions(DEFAULT_MAP="${CMAKE_SOURCE_DIR}/game_data/maps/default"
+    add_compile_definitions(GAME_DATA="${CMAKE_SOURCE_DIR}/game_data/"
+                            DEFAULT_MAP="${CMAKE_SOURCE_DIR}/game_data/maps/default"
                             BANNER="${CMAKE_SOURCE_DIR}/game_data/banner.txt"
     )
 endif(InstallMaterials)
 unset(InstallMaterials CACHE)
+
+# Configuration
+configure_file (
+  "${CMAKE_SOURCE_DIR}/include/config.h.in"
+  "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/config.h"
+)
+include_directories("${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
 # Includes
 include_directories(${CMAKE_SOURCE_DIR}/include)
@@ -47,4 +56,4 @@ file(GLOB_RECURSE SRCS ${CMAKE_SOURCE_DIR}/src/*.c ${CMAKE_SOURCE_DIR}/src/map/*
 # Final
 add_executable(aftn ${SRCS})
 
-install(TARGETS aftn DESTINATION bin)
+install(TARGETS aftn DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
