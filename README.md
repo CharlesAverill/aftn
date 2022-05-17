@@ -5,7 +5,7 @@ This is a terminal-based clone of the ["ALIEN: Fate of The Nostromo" board game]
 ## Installation
 
 ### Debug
-Installs to `bin/`
+Installs to `bin/aftn`
 ```sh
 git clone https://github.com/CharlesAverill/aftn.git
 cd aftn
@@ -15,7 +15,7 @@ cmake --build build
 ```
 
 ### Full Install
-Installs to `/usr/share/aftn/`
+Installs to `/usr/games/aftn`
 ```sh
 git clone https://github.com/CharlesAverill/aftn.git
 cd aftn
