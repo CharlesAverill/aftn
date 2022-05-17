@@ -216,7 +216,7 @@ map *read_map(const char *fn) {
         continue;
       } else if (scanning_ascii_map == 0) {
         scanning_ascii_map = 1;
-        new_map->ascii_map = (char *)malloc(2048);
+        new_map->ascii_map = (char *)malloc(1 << 16);
         new_map->ascii_map[0] = '\0';
         continue;
       } else if (scanning_ascii_map == 1) {
