@@ -13,8 +13,8 @@
 #include "manager.h"
 #include "map/map.h"
 
-const char *DEFAULT_MAP = "/var/games/aftn/game_data/maps/default";
-const char *BANNER = "/var/games/aftn/game_data/banner.txt";
+const char *DEFAULT_MAP = "/usr/share/games/aftn/game_data/maps/default";
+const char *BANNER = "/usr/share/games/aftn/game_data/banner.txt";
 
 const char *argp_program_version = "aftn 0.0.1";
 const char *argp_program_bug_address = "charles@utdallas.edu";
@@ -29,7 +29,7 @@ static struct argp_option options[] = {{"n_players", 'n', "integer", 0, "Number 
                                         "FILE",
                                         0,
                                         "Read game board from this path rather than the default. Check "
-                                        "/var/games/aftn/maps/format.txt to create your own game boards"},
+                                        "/usr/share/games/aftn/maps/format.txt to create your own game boards"},
                                        {"print_map", 'p', 0, 0, "Print out a text representation of the game map"},
                                        {"draw_map", 'd', 0, 0, "Draw the game map if an ASCII map is provided"},
                                        {0}};
