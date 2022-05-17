@@ -1,0 +1,7 @@
+/home/charles/Desktop/aftn/build/CMakeFiles/aftn.dir
+/home/charles/Desktop/aftn/build/CMakeFiles/edit_cache.dir
+/home/charles/Desktop/aftn/build/CMakeFiles/rebuild_cache.dir
+/home/charles/Desktop/aftn/build/CMakeFiles/list_install_components.dir
+/home/charles/Desktop/aftn/build/CMakeFiles/install.dir
+/home/charles/Desktop/aftn/build/CMakeFiles/install/local.dir
+/home/charles/Desktop/aftn/build/CMakeFiles/install/strip.dir

@@ -3,7 +3,7 @@
  * @author Charles Averill <charlesaverill>
  * @date   12-May-2022
  * @brief The encounter structure and accompanying function headers
-*/
+ */
 
 #ifndef ENCOUNTER_H
 #define ENCOUNTER_H
@@ -13,13 +13,13 @@
 
 // Enum of different types of encounter
 typedef enum {
-    QUIET,
-    ALIEN_Lost_The_Signal,
-    ALIEN_Stalk,
-    ALIEN_Hunt,
-    ORDER937_Meet_Me_In_The_Infirmary,
-    ORDER937_Crew_Expendable,
-    ORDER937_Collating_Data
+  QUIET,
+  ALIEN_Lost_The_Signal,
+  ALIEN_Stalk,
+  ALIEN_Hunt,
+  ORDER937_Meet_Me_In_The_Infirmary,
+  ORDER937_Crew_Expendable,
+  ORDER937_Collating_Data
 } ENCOUNTER_TYPES;
 
 extern char *encounter_names[7];

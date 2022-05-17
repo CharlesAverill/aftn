@@ -3,7 +3,7 @@
  * @author Charles Averill <charlesaverill>
  * @date   12-May-2022
  * @brief Logic and data for encounters
-*/
+ */
 
 #include "map/encounter.h"
 
@@ -40,75 +40,74 @@ ENCOUNTER_TYPES encounters[ENCOUNTER_STACK_SIZE] = {
     ORDER937_Collating_Data,
 };
 
-ENCOUNTER_TYPES discard_encounters[ENCOUNTER_STACK_SIZE] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-                                                            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+ENCOUNTER_TYPES discard_encounters[ENCOUNTER_STACK_SIZE] = {
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 
 /**
  * Shuffle the encounters deck
  */
-void shuffle_encounters()
-{
-    for (int i = num_encounters; i > 0; i--) {
-        int j = rand() % (i + 1);
+void shuffle_encounters() {
+  for (int i = num_encounters; i > 0; i--) {
+    int j = rand() % (i + 1);
 
-        ENCOUNTER_TYPES tmp = encounters[i];
-        encounters[i] = encounters[j];
-        encounters[j] = tmp;
-    }
+    ENCOUNTER_TYPES tmp = encounters[i];
+    encounters[i] = encounters[j];
+    encounters[j] = tmp;
+  }
 }
 
 /**
- * Draws an encounter card, discards it, and returns the index of the card in discard_encounters
+ * Draws an encounter card, discards it, and returns the index of the card in
+ * discard_encounters
  * @return Index of the card in discard_encounters
  */
-int draw_encounter()
-{
-    if (num_encounters <= 0) {
-        return -1;
-    }
+int draw_encounter() {
+  if (num_encounters <= 0) {
+    return -1;
+  }
 
-    return discard_encounter();
+  return discard_encounter();
 }
 
 /**
  * Moves card from top of encounters stack to top of discard_encounters stack
  * @return index of discarded card in discard_encounters
  */
-int discard_encounter()
-{
-    if (num_encounters <= 0) {
-        return -1;
-    }
+int discard_encounter() {
+  if (num_encounters <= 0) {
+    return -1;
+  }
 
-    discard_encounters[ENCOUNTER_STACK_SIZE - num_encounters] = encounters[num_encounters - 1];
-    encounters[num_encounters - 1] = -1;
-    num_encounters--;
-    return ENCOUNTER_STACK_SIZE - num_encounters - 1;
+  discard_encounters[ENCOUNTER_STACK_SIZE - num_encounters] =
+      encounters[num_encounters - 1];
+  encounters[num_encounters - 1] = -1;
+  num_encounters--;
+  return ENCOUNTER_STACK_SIZE - num_encounters - 1;
 }
 
 /**
  * Moves card from top of discard_encounters stack to top of encounters stack
  */
-void replace_encounter()
-{
-    if (num_encounters >= ENCOUNTER_STACK_SIZE) {
-        return;
-    }
+void replace_encounter() {
+  if (num_encounters >= ENCOUNTER_STACK_SIZE) {
+    return;
+  }
 
-    encounters[num_encounters] = discard_encounters[ENCOUNTER_STACK_SIZE - num_encounters - 1];
-    discard_encounters[ENCOUNTER_STACK_SIZE - num_encounters - 1] = -1;
-    num_encounters++;
+  encounters[num_encounters] =
+      discard_encounters[ENCOUNTER_STACK_SIZE - num_encounters - 1];
+  discard_encounters[ENCOUNTER_STACK_SIZE - num_encounters - 1] = -1;
+  num_encounters++;
 }
 
 /**
  * Put all encounter cards back in the stack
  */
-void replace_all_encounters()
-{
-    while (num_encounters < ENCOUNTER_STACK_SIZE) {
-        replace_encounter();
-    }
-    shuffle_encounters();
+void replace_all_encounters() {
+  while (num_encounters < ENCOUNTER_STACK_SIZE) {
+    replace_encounter();
+  }
+  shuffle_encounters();
 }
 
 /**
@@ -116,59 +115,57 @@ void replace_all_encounters()
  * @param idx  Index in discarded pile
  * @return     Whether or not the replace was successful
  */
-bool replace_card(int idx)
-{
-    if (num_encounters >= ENCOUNTER_STACK_SIZE) {
-        return false;
-    }
+bool replace_card(int idx) {
+  if (num_encounters >= ENCOUNTER_STACK_SIZE) {
+    return false;
+  }
 
-    encounters[num_encounters] = discard_encounters[idx];
-    discard_encounters[idx] = -1;
-    num_encounters++;
+  encounters[num_encounters] = discard_encounters[idx];
+  discard_encounters[idx] = -1;
+  num_encounters++;
 
-    for (int i = 0; i < ENCOUNTER_STACK_SIZE - 1; i++) {
-        if (discard_encounters[i] == -1) {
-            int j;
-            for (j = i; j < ENCOUNTER_STACK_SIZE; j++) {
-                if (discard_encounters[j] != -1) {
-                    break;
-                }
-            }
-            if (j == ENCOUNTER_STACK_SIZE - 1) {
-                break;
-            }
-            discard_encounters[i] = discard_encounters[j];
+  for (int i = 0; i < ENCOUNTER_STACK_SIZE - 1; i++) {
+    if (discard_encounters[i] == -1) {
+      int j;
+      for (j = i; j < ENCOUNTER_STACK_SIZE; j++) {
+        if (discard_encounters[j] != -1) {
+          break;
         }
+      }
+      if (j == ENCOUNTER_STACK_SIZE - 1) {
+        break;
+      }
+      discard_encounters[i] = discard_encounters[j];
     }
+  }
 
-    return true;
+  return true;
 }
 
 /**
  * Replaces all alien cards in discard_encounters
  */
-void replace_alien_cards()
-{
-    for (int i = 0; i < ENCOUNTER_STACK_SIZE - num_encounters; i++) {
-        if (discard_encounters[i] >= ALIEN_Lost_The_Signal && discard_encounters[i] <= ALIEN_Hunt) {
-            replace_card(i);
-            i--;
-        }
+void replace_alien_cards() {
+  for (int i = 0; i < ENCOUNTER_STACK_SIZE - num_encounters; i++) {
+    if (discard_encounters[i] >= ALIEN_Lost_The_Signal &&
+        discard_encounters[i] <= ALIEN_Hunt) {
+      replace_card(i);
+      i--;
     }
-    shuffle_encounters();
+  }
+  shuffle_encounters();
 }
 
 /**
  * Replaces all order937 cards in discard_encounters
  */
-void replace_order937_cards()
-{
-    for (int i = 0; i < ENCOUNTER_STACK_SIZE - num_encounters; i++) {
-        if (discard_encounters[i] >= ORDER937_Meet_Me_In_The_Infirmary &&
-            discard_encounters[i] <= ORDER937_Collating_Data) {
-            replace_card(i);
-            i--;
-        }
+void replace_order937_cards() {
+  for (int i = 0; i < ENCOUNTER_STACK_SIZE - num_encounters; i++) {
+    if (discard_encounters[i] >= ORDER937_Meet_Me_In_The_Infirmary &&
+        discard_encounters[i] <= ORDER937_Collating_Data) {
+      replace_card(i);
+      i--;
     }
-    shuffle_encounters();
+  }
+  shuffle_encounters();
 }

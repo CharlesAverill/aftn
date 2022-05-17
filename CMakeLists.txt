@@ -28,6 +28,13 @@ install(FILES ${CMAKE_SOURCE_DIR}/game_data/banner.txt DESTINATION share/games/a
 
 if(InstallMaterials)
     install(FILES ${CMAKE_SOURCE_DIR}/game_data/materials DESTINATION share/games/aftn/game_data)
+    add_compile_definitions(DEFAULT_MAP="${CMAKE_INSTALL_PREFIX}/share/games/aftn/game_data/maps/default"
+                            BANNER="${CMAKE_INSTALL_PREFIX}/share/games/aftn/game_data/banner.txt"
+    )
+else()
+    add_compile_definitions(DEFAULT_MAP="${CMAKE_SOURCE_DIR}/game_data/maps/default"
+                            BANNER="${CMAKE_SOURCE_DIR}/game_data/banner.txt"
+    )
 endif(InstallMaterials)
 unset(InstallMaterials CACHE)
 

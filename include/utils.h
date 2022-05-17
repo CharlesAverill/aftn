@@ -3,7 +3,7 @@
  * @author Charles Averill
  * @date   11-May-2022
  * @brief String and integer util function headers, and the room_queue structure
-*/
+ */
 
 #ifndef UTILS_H
 #define UTILS_H
@@ -32,10 +32,10 @@ char get_character();
 
 // Used for Xeno and Ash trajectory planning
 typedef struct room_queue {
-    int size;
-    int max_size;
-    room *head;
-    room *tail;
+  int size;
+  int max_size;
+  room *head;
+  room *tail;
 } room_queue;
 
 room_queue *new_room_queue(int capacity);
