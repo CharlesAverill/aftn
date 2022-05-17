@@ -12,8 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define NUM_ITEM_TYPES 7
-
 // Enum defining types of items
 typedef enum {
   FLASHLIGHT,
@@ -22,7 +20,8 @@ typedef enum {
   INCINERATOR,
   ELECTRIC_PROD,
   CAT_CARRIER,
-  COOLANT_CANISTER
+  COOLANT_CANISTER,
+  NUM_ITEM_TYPES
 } ITEM_TYPES;
 
 extern int item_costs[NUM_ITEM_TYPES];

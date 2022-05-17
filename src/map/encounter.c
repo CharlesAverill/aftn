@@ -48,7 +48,7 @@ ENCOUNTER_TYPES discard_encounters[ENCOUNTER_STACK_SIZE] = {
  * Shuffle the encounters deck
  */
 void shuffle_encounters() {
-  for (int i = num_encounters; i > 0; i--) {
+  for (int i = num_encounters - 1; i > 0; i--) {
     int j = rand() % (i + 1);
 
     ENCOUNTER_TYPES tmp = encounters[i];
@@ -132,7 +132,7 @@ bool replace_card(int idx) {
           break;
         }
       }
-      if (j == ENCOUNTER_STACK_SIZE - 1) {
+      if (j >= ENCOUNTER_STACK_SIZE - 1) {
         break;
       }
       discard_encounters[i] = discard_encounters[j];
