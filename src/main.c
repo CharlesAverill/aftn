@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
   argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
   if (arguments.n_players > 1) {
-    fprintf(stderr, "[UNIMPLEMENTED] - Multiplayer is not yet implemented\n");
+    fprintf(stderr, "[UNIMPLEMENTED] - Netplay is not yet implemented\n");
     exit(1);
   }
 

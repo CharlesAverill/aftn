@@ -11,7 +11,7 @@ git clone https://github.com/CharlesAverill/aftn.git
 cd aftn
 
 cmake -S . -B build
-cmake --build build
+cmake --build build -DDebugBuild=ON
 ```
 
 ### Full Install
@@ -22,7 +22,7 @@ cd aftn
 
 cmake -S . -B build
 cmake --build build
-sudo cmake --build build --target install
+sudo cmake --build build --target install -DDebugBuild=OFF
 ```
 
 ## Usage
