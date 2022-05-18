@@ -5,6 +5,10 @@
  * @brief  A set of CMAKE configurations to make version numbering etc. easier
  */
 
- #define CONFIG_aftn_VERSION "@PROJECT_VERSION@"
- #define CONFIG_ARGP_PROGRAM_VERSION "aftn " CONFIG_aftn_VERSION
- #define CONFIG_format_txt_LOCATION GAME_DATA "maps/format.txt"
+#define CONFIG_aftn_VERSION "@PROJECT_VERSION@"
+#define CONFIG_ARGP_PROGRAM_VERSION "aftn " CONFIG_aftn_VERSION
+
+#define CONFIG_format_txt_LOCATION GAME_DATA "/maps/format.txt"
+
+#define DEFAULT_MAP GAME_DATA "/maps/default"
+#define BANNER GAME_DATA "/banner.txt"

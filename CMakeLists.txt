@@ -12,32 +12,54 @@ else()
     message(STATUS "Using user specified C standard ${CMAKE_C_STANDARD}")
 endif()
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
-set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type on single-configuration generators")
+option(DebugBuild "DebugBuild" OFF)
 
-set(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install directory used by install()")
-message("Call with -DInstallMaterials=ON to install copies of the game manual and game pieces to ${CMAKE_INSTALL_PREFIX}/share/games/aftn/game_data/materials")
-option(InstallMaterials "InstallMaterials" OFF)
+if(DebugBuild)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/")
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type on single-configuration generators")
 
-# Copy maps to install directory
-install(FILES
-    ${CMAKE_SOURCE_DIR}/game_data/maps/default
-    ${CMAKE_SOURCE_DIR}/game_data/maps/format.txt
-    DESTINATION share/games/aftn/game_data/maps)
-install(FILES ${CMAKE_SOURCE_DIR}/game_data/banner.txt DESTINATION share/games/aftn/game_data)
+    if(Win32)
+        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}\bin")
+        add_compile_definitions(GAME_DATA="${CMAKE_SOURCE_DIR}\game_data")
+    else()
+        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
+        add_compile_definitions(GAME_DATA="${CMAKE_SOURCE_DIR}/game_data")
+    endif(Win32)
 
-if(InstallMaterials)
-    install(FILES ${CMAKE_SOURCE_DIR}/game_data/materials DESTINATION share/games/aftn/game_data)
-    add_compile_definitions(GAME_DATA="${CMAKE_INSTALL_PREFIX}/share/games/aftn/game_data/"
-                            DEFAULT_MAP="${CMAKE_INSTALL_PREFIX}/share/games/aftn/game_data/maps/default"
-                            BANNER="${CMAKE_INSTALL_PREFIX}/share/games/aftn/game_data/banner.txt"
-    )
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}" CACHE PATH "Install directory used by install()" FORCE)
 else()
-    add_compile_definitions(GAME_DATA="${CMAKE_SOURCE_DIR}/game_data/"
-                            DEFAULT_MAP="${CMAKE_SOURCE_DIR}/game_data/maps/default"
-                            BANNER="${CMAKE_SOURCE_DIR}/game_data/banner.txt"
-    )
-endif(InstallMaterials)
+    if(Win32)
+        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "\Program Files\aftn")
+        set(CMAKE_INSTALL_PREFIX "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" CACHE PATH "Install directory used by install()")
+        add_compile_definitions(GAME_DATA="${CMAKE_INSTALL_PREFIX}\game_data")
+    else()
+        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "/usr/games")
+        set(CMAKE_INSTALL_PREFIX "/usr/share/games/aftn" CACHE PATH "Install directory used by install()" FORCE)
+        add_compile_definitions(GAME_DATA="${CMAKE_INSTALL_PREFIX}/game_data")
+    endif()
+
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type on single-configuration generators")
+
+    message("Call with -DInstallMaterials=ON to install copies of the game manual and game pieces to ${CMAKE_INSTALL_PREFIX}/game_data/materials")
+    option(InstallMaterials "InstallMaterials" OFF)
+
+    # Copy maps to install directory
+    install(FILES
+            "${CMAKE_SOURCE_DIR}/game_data/maps/default"
+            "${CMAKE_SOURCE_DIR}/game_data/maps/format.txt"
+            DESTINATION "${CMAKE_INSTALL_PREFIX}/game_data")
+    install(FILES
+            "${CMAKE_SOURCE_DIR}/game_data/banner.txt"
+            DESTINATION "${CMAKE_INSTALL_PREFIX}/game_data/")
+
+    if(InstallMaterials)
+        install(FILES
+                "${CMAKE_SOURCE_DIR}/game_data/materials"
+                DESTINATION "${CMAKE_INSTALL_PREFIX}/game_data")
+    endif(InstallMaterials)
+endif(DebugBuild)
+
+unset(DebugBuild CACHE)
 unset(InstallMaterials CACHE)
 
 # Configuration
@@ -48,12 +70,16 @@ configure_file (
 include_directories("${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
 # Includes
-include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories("${CMAKE_SOURCE_DIR}/include")
 
 # Sources
-file(GLOB_RECURSE SRCS ${CMAKE_SOURCE_DIR}/src/*.c ${CMAKE_SOURCE_DIR}/src/map/*.c)
+file(GLOB_RECURSE SRCS "${CMAKE_SOURCE_DIR}/src/*.c" "${CMAKE_SOURCE_DIR}/src/map/*.c")
 
 # Final
 add_executable(aftn ${SRCS})
 
-install(TARGETS aftn DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+if(Win32)
+    install(TARGETS aftn DESTINATION "${CMAKE_INSTALL_PREFIX}")
+else()
+    install(TARGETS aftn DESTINATION "/usr/games")
+endif(Win32)
