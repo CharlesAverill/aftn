@@ -932,7 +932,6 @@ int trigger_event(game_manager *manager, struct character *moved,
               printf("%s used the CAT CARRIER to catch Jonesy.\n",
                      moved->last_name);
               manager->jonesy_caught = true;
-              moved->held_items[i] = NULL;
             }
             break;
           }
@@ -1165,14 +1164,6 @@ bool pickup(game_manager *manager) {
     printf("Pick up options:\n");
     int option_index = 0;
 
-    // Print scrap
-    int scrap_index = -1;
-    if (manager->active_character->current_room->num_scrap != 0) {
-      scrap_index = option_index;
-      printf("\t%d) Scrap (%d)\n", ++option_index,
-             manager->active_character->current_room->num_scrap);
-    }
-
     // Print room items
     int item_indices[NUM_ROOM_ITEMS] = {-1, -1, -1, -1, -1, -1};
     for (int k = 0; k < manager->active_character->current_room->num_items;
@@ -1184,6 +1175,11 @@ bool pickup(game_manager *manager) {
       }
     }
 
+    // Print scrap
+    if (manager->active_character->current_room->num_scrap != 0) {
+      printf("\ts) Scrap (%d)\n", manager->active_character->current_room->num_scrap);
+    }
+
     // Back
     printf("\tb) Back\n");
 
@@ -1192,7 +1188,7 @@ bool pickup(game_manager *manager) {
     while (ch < '1' || ch > '0' + option_index) {
       ch = get_character();
 
-      if (ch == 'b') {
+      if (ch == 'b' || ch == 's') {
         break;
       }
     }
@@ -1200,28 +1196,27 @@ bool pickup(game_manager *manager) {
     // Process input
     if (ch == 'b') {
       return false;
-    } else {
+  } else if(ch == 's') {
+      printf("Pick up how much scrap? (Max %d): ",
+             manager->active_character->current_room->num_scrap);
+
+      ch = '\0';
+      while (ch < '1' ||
+             ch > '0' + manager->active_character->current_room->num_scrap) {
+        ch = get_character();
+      }
+
+      printf("%s picked up %d Scrap\n", manager->active_character->last_name,
+             ch - '0');
+      manager->active_character->current_room->num_scrap -= ch - '0';
+      manager->active_character->num_scrap += ch - '0';
+      manager->active_character->num_scrap =
+          min(9, manager->active_character->num_scrap);
+
+      break_loop = true;
+  } else {
       int selection_index = ch - '0' - 1;
 
-      if (scrap_index == selection_index) {
-        printf("Pick up how much scrap? (Max %d): ",
-               manager->active_character->current_room->num_scrap);
-
-        ch = '\0';
-        while (ch < '1' ||
-               ch > '0' + manager->active_character->current_room->num_scrap) {
-          ch = get_character();
-        }
-
-        printf("%s picked up %d Scrap\n", manager->active_character->last_name,
-               ch - '0');
-        manager->active_character->current_room->num_scrap -= ch - '0';
-        manager->active_character->num_scrap += ch - '0';
-        manager->active_character->num_scrap =
-            min(9, manager->active_character->num_scrap);
-
-        break_loop = true;
-      } else {
         item *target_item = NULL;
         int m;
         for (m = 0; m < NUM_ROOM_ITEMS; m++) {
@@ -1267,7 +1262,6 @@ bool pickup(game_manager *manager) {
             printf("%s is already holding 3 items\n",
                    manager->active_character->last_name);
           }
-        }
       }
     }
   }
@@ -1293,14 +1287,6 @@ bool drop(game_manager *manager) {
     printf("Drop options:\n");
     int option_index = 0;
 
-    // Print scrap
-    int scrap_index = -1;
-    if (manager->active_character->num_scrap != 0) {
-      scrap_index = option_index;
-      printf("\t%d) Scrap (%d)\n", ++option_index,
-             manager->active_character->num_scrap);
-    }
-
     // Print character items
     int item_indices[3] = {-1, -1, -1};
     for (int k = 0; k < 3; k++) {
@@ -1319,6 +1305,11 @@ bool drop(game_manager *manager) {
       print_item(manager->active_character->coolant);
     }
 
+    // Scrap
+    if (manager->active_character->num_scrap != 0) {
+      printf("\ts) Scrap (%d)\n", manager->active_character->num_scrap);
+    }
+
     // Back
     printf("\tb) Back\n");
 
@@ -1327,7 +1318,7 @@ bool drop(game_manager *manager) {
     while (ch < '1' || ch > '0' + option_index) {
       ch = get_character();
 
-      if (ch == 'b') {
+      if (ch == 'b' || ch == 's') {
         break;
       }
     }
@@ -1335,10 +1326,7 @@ bool drop(game_manager *manager) {
     // Process input
     if (ch == 'b') {
       return false;
-    } else {
-      int selection_index = ch - '0' - 1;
-
-      if (scrap_index == selection_index) {
+  } else if(ch == 's') {
         printf("Drop how much scrap? (Max %d): ",
                manager->active_character->num_scrap);
 
@@ -1347,13 +1335,18 @@ bool drop(game_manager *manager) {
           ch = get_character();
         }
 
+        ch -= '0';
+
         printf("%s dropped %d Scrap\n", manager->active_character->last_name,
-               ch - '0');
-        manager->active_character->current_room->num_scrap += ch - '0';
-        manager->active_character->num_scrap -= ch - '0';
+               ch);
+        manager->active_character->current_room->num_scrap += ch;
+        manager->active_character->num_scrap -= ch;
 
         break_loop = true;
-      } else if (manager->active_character->current_room->num_items <
+  } else {
+      int selection_index = ch - '0' - 1;
+
+      if (manager->active_character->current_room->num_items <
                  NUM_ROOM_ITEMS) {
         item *target_item = NULL;
         int k;
@@ -1456,7 +1449,7 @@ int use(game_manager *manager) {
     if (ch == 'b') {
       return 0;
     } else {
-      int item_selection = ch - '0' - 1;
+      int item_selection = usable_indices[ch - '0' - 1];
 
       ITEM_TYPES item_type =
           manager->active_character->held_items[usable_indices[item_selection]]
