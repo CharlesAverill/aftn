@@ -1177,7 +1177,8 @@ bool pickup(game_manager *manager) {
 
     // Print scrap
     if (manager->active_character->current_room->num_scrap != 0) {
-      printf("\ts) Scrap (%d)\n", manager->active_character->current_room->num_scrap);
+      printf("\ts) Scrap (%d)\n",
+             manager->active_character->current_room->num_scrap);
     }
 
     // Back
@@ -1196,7 +1197,7 @@ bool pickup(game_manager *manager) {
     // Process input
     if (ch == 'b') {
       return false;
-  } else if(ch == 's') {
+    } else if (ch == 's') {
       printf("Pick up how much scrap? (Max %d): ",
              manager->active_character->current_room->num_scrap);
 
@@ -1214,54 +1215,52 @@ bool pickup(game_manager *manager) {
           min(9, manager->active_character->num_scrap);
 
       break_loop = true;
-  } else {
+    } else {
       int selection_index = ch - '0' - 1;
 
-        item *target_item = NULL;
-        int m;
-        for (m = 0; m < NUM_ROOM_ITEMS; m++) {
-          if (item_indices[m] == selection_index) {
-            target_item =
-                manager->active_character->current_room->room_items[m];
-            break;
-          }
+      item *target_item = NULL;
+      int m;
+      for (m = 0; m < NUM_ROOM_ITEMS; m++) {
+        if (item_indices[m] == selection_index) {
+          target_item = manager->active_character->current_room->room_items[m];
+          break;
         }
+      }
 
-        if (target_item->type == COOLANT_CANISTER) {
-          if (manager->active_character->coolant == NULL) {
-            printf("%s picked up the COOLANT CANISTER\n",
-                   manager->active_character->last_name);
-            manager->active_character->current_room->room_items[m] = NULL;
-            manager->active_character->coolant = target_item;
-            break_loop = true;
-          } else {
-            printf("%s is already holding a COOLANT CANISTER\n",
-                   manager->active_character->last_name);
-          }
+      if (target_item->type == COOLANT_CANISTER) {
+        if (manager->active_character->coolant == NULL) {
+          printf("%s picked up the COOLANT CANISTER\n",
+                 manager->active_character->last_name);
+          manager->active_character->current_room->room_items[m] = NULL;
+          manager->active_character->coolant = target_item;
+          break_loop = true;
         } else {
-          if (manager->active_character->num_items < 3) {
-            for (int l = 0; l < 3; l++) {
-              if (manager->active_character->held_items[l] == NULL) {
-                manager->active_character->held_items[l] = target_item;
-                break;
-              }
+          printf("%s is already holding a COOLANT CANISTER\n",
+                 manager->active_character->last_name);
+        }
+      } else {
+        if (manager->active_character->num_items < 3) {
+          for (int l = 0; l < 3; l++) {
+            if (manager->active_character->held_items[l] == NULL) {
+              manager->active_character->held_items[l] = target_item;
+              break;
             }
-            manager->active_character->num_items++;
-
-            printf("%s picked up the %s\n",
-                   manager->active_character->last_name,
-                   item_names[manager->active_character->current_room
-                                  ->room_items[m]
-                                  ->type]);
-
-            manager->active_character->current_room->num_items--;
-            manager->active_character->current_room->room_items[m] = NULL;
-
-            break_loop = true;
-          } else {
-            printf("%s is already holding 3 items\n",
-                   manager->active_character->last_name);
           }
+          manager->active_character->num_items++;
+
+          printf(
+              "%s picked up the %s\n", manager->active_character->last_name,
+              item_names[manager->active_character->current_room->room_items[m]
+                             ->type]);
+
+          manager->active_character->current_room->num_items--;
+          manager->active_character->current_room->room_items[m] = NULL;
+
+          break_loop = true;
+        } else {
+          printf("%s is already holding 3 items\n",
+                 manager->active_character->last_name);
+        }
       }
     }
   }
@@ -1326,28 +1325,26 @@ bool drop(game_manager *manager) {
     // Process input
     if (ch == 'b') {
       return false;
-  } else if(ch == 's') {
-        printf("Drop how much scrap? (Max %d): ",
-               manager->active_character->num_scrap);
+    } else if (ch == 's') {
+      printf("Drop how much scrap? (Max %d): ",
+             manager->active_character->num_scrap);
 
-        ch = '\0';
-        while (ch < '1' || ch > '0' + manager->active_character->num_scrap) {
-          ch = get_character();
-        }
+      ch = '\0';
+      while (ch < '1' || ch > '0' + manager->active_character->num_scrap) {
+        ch = get_character();
+      }
 
-        ch -= '0';
+      ch -= '0';
 
-        printf("%s dropped %d Scrap\n", manager->active_character->last_name,
-               ch);
-        manager->active_character->current_room->num_scrap += ch;
-        manager->active_character->num_scrap -= ch;
+      printf("%s dropped %d Scrap\n", manager->active_character->last_name, ch);
+      manager->active_character->current_room->num_scrap += ch;
+      manager->active_character->num_scrap -= ch;
 
-        break_loop = true;
-  } else {
+      break_loop = true;
+    } else {
       int selection_index = ch - '0' - 1;
 
-      if (manager->active_character->current_room->num_items <
-                 NUM_ROOM_ITEMS) {
+      if (manager->active_character->current_room->num_items < NUM_ROOM_ITEMS) {
         item *target_item = NULL;
         int k;
         for (k = 0; k < 3; k++) {
